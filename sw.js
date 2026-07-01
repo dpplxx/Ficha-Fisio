@@ -1,5 +1,5 @@
 /* Service worker — Ficha Fisio. Página sempre atualizada (network-first), offline como reserva. */
-const CACHE = 'ficha-fisio-v29';
+const CACHE = 'ficha-fisio-v31';
 const SUPA = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 

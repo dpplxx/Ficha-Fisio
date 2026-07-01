@@ -1895,9 +1895,9 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     catch(e){ msg('Erro de conexão.'); }
   };
   window.authSair=async function(){
-    try{ await sb.auth.signOut(); }catch(e){}
-    try{ localStorage.removeItem('fisio_assin_'+((await sb.auth.getUser()).data?.user?.id||'')); }catch(e){}
+    try{ const {data}=await sb.auth.getSession(); if(data?.session?.user?.id) localStorage.removeItem('fisio_assin_'+data.session.user.id); }catch(e){}
     telas('login');
+    sb.auth.signOut().catch(()=>{});
   };
   window.recheckAssinatura=async function(){
     const pm=$('payMsg'); if(pm){ pm.textContent='Verificando assinatura...'; pm.className='auth-msg ok'; }
