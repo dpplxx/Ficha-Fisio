@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pré-avaliação — Ficha Fisio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#eef4fa;color:#1b2733;font-size:16px;line-height:1.5}
+header{background:linear-gradient(135deg,#0f4c81,#1769aa);color:#fff;padding:20px 18px;display:flex;align-items:center;gap:12px}
+header h1{font-size:18px;font-weight:600}
+header .sub{font-size:13px;opacity:.9}
+main{max-width:540px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:14px;border:1px solid #cdd9e5}
+.intro{font-size:14px;color:#5b6b7b;margin-bottom:6px}
+label{display:block;font-weight:600;font-size:14px;color:#33485c;margin:14px 0 5px}
+input,select,textarea{width:100%;font-size:16px;padding:11px 12px;border:1px solid #cdd9e5;border-radius:8px;font-family:inherit;background:#fff}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid #1769aa;border-color:#1769aa}
+.eva-row{display:flex;align-items:center;gap:12px}
+.eva-val{font-size:20px;font-weight:700;color:#0f4c81;min-width:42px;text-align:center}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#5b6b7b;background:#f4f8fc;padding:12px;border-radius:8px;margin-top:8px}
+.consent input{width:auto;margin-top:3px}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+button{cursor:pointer;border:none;border-radius:10px;padding:15px;font-size:16px;font-weight:700}
+.bwhats{background:#25d366;color:#fff}
+.bcopy{background:#eef4fa;color:#0f4c81;border:1px solid #cdd9e5}
+.foot{text-align:center;font-size:12px;color:#7c8b9a;padding:10px 0 30px}
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 64 64" width="38" height="38" style="flex:none"><rect x="3" y="3" width="58" height="58" rx="15" fill="#13568f"/><circle cx="32" cy="19" r="5.5" fill="#fff"/><path d="M32 25 C27 29 23 29 19 26 M32 25 C37 27 43 26 47 22 M32 25 L32 39 L25 51 M32 39 L40 50" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 48 Q32 39 50 48" fill="none" stroke="#7fb4d8" stroke-width="2.4" stroke-linecap="round"/></svg>
+  <div><h1>Pré-avaliação Fisioterapêutica</h1><div class="sub">Responda antes da sua consulta — leva uns 3 minutos</div></div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="intro">Suas respostas ajudam o(a) fisioterapeuta a se preparar para o seu atendimento. Preencha o que souber. 💙</div>
+
+    <label>Nome completo *</label><input id="nome" autocomplete="name">
+    <label>Data de nascimento</label><input id="nasc" type="date">
+    <label>Sexo</label><select id="sexo"><option value="">—</option><option>Feminino</option><option>Masculino</option><option>Outro</option></select>
+    <label>Telefone / WhatsApp</label><input id="tel" inputmode="tel">
+    <label>Profissão</label><input id="prof">
+  </div>
+
+  <div class="card">
+    <label>Qual é o seu principal problema ou queixa? *</label><textarea id="qp" placeholder="Ex.: dor no joelho direito ao subir escada"></textarea>
+    <label>Há quanto tempo?</label><input id="tempo" placeholder="Ex.: 2 meses">
+    <label>Onde dói / incomoda?</label><input id="local" placeholder="Ex.: joelho direito, parte da frente">
+    <label>De 0 a 10, qual a intensidade da sua dor?</label>
+    <div class="eva-row"><input id="eva" type="range" min="0" max="10" value="0" oninput="document.getElementById('evaval').textContent=this.value"><span class="eva-val" id="evaval">0</span></div>
+    <label>O que melhora?</label><input id="melhora" placeholder="Ex.: repouso, gelo">
+    <label>O que piora?</label><input id="piora" placeholder="Ex.: agachar, correr">
+  </div>
+
+  <div class="card">
+    <label>Tem alguma doença ou condição de saúde?</label><textarea id="comorb" placeholder="Ex.: diabetes, pressão alta, nenhuma"></textarea>
+    <label>Já fez alguma cirurgia?</label><input id="cirurg" placeholder="Ex.: menisco em 2020, nenhuma">
+    <label>Usa algum medicamento?</label><input id="med" placeholder="Ex.: anti-inflamatório, nenhum">
+    <label>Pratica atividade física? Qual?</label><input id="ativ" placeholder="Ex.: corrida 3x/semana">
+    <label>Quer contar mais alguma coisa?</label><textarea id="mais"></textarea>
+
+    <div class="consent"><input type="checkbox" id="consent"><span>Autorizo o uso destas informações para a minha avaliação fisioterapêutica. Os dados serão enviados diretamente ao(à) meu(minha) fisioterapeuta.</span></div>
+
+    <div class="btns">
+      <button class="bwhats" onclick="enviar()">📲 Enviar para o(a) fisioterapeuta</button>
+      <button class="bcopy" onclick="copiar()">📋 Copiar código (caso prefira colar manualmente)</button>
+    </div>
+  </div>
+  <div class="foot">Ficha Fisio · pré-avaliação</div>
+</main>
+
+<script>
+/* Número do fisioterapeuta (formato internacional: 55 + DDD + número). Vazio = o paciente escolhe o contato. */
+const FISIO_WHATS = '';
+
+function v(id){return (document.getElementById(id).value||'').trim();}
+function coletar(){
+  return {
+    id_nome:v('nome'), id_nasc:v('nasc'), id_sexo:v('sexo'), id_tel:v('tel'), id_prof:v('prof'),
+    an_qp:v('qp'), dor_local:v('local'), eva_repouso:v('eva'),
+    dor_melhora:v('melhora'), dor_piora:v('piora'),
+    an_comorb:v('comorb'), an_cirurg:v('cirurg'), an_med:v('med'), an_habitos:v('ativ'),
+    an_hma:('Há quanto tempo: '+(v('tempo')||'-')+'. '+v('mais')).trim()
+  };
+}
+function codigo(o){return 'FICHA::'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));}
+function resumo(o){
+  return '*Pré-avaliação — '+(o.id_nome||'Paciente')+'*\n'+
+    'Nascimento: '+(o.id_nasc||'-')+'\nTelefone: '+(o.id_tel||'-')+'\nProfissão: '+(o.id_prof||'-')+'\n'+
+    '\n*Queixa:* '+(o.an_qp||'-')+'\n'+(o.an_hma||'')+'\n*Onde dói:* '+(o.dor_local||'-')+'\n*Dor (0-10):* '+(o.eva_repouso||'0')+'\n*Melhora:* '+(o.dor_melhora||'-')+'\n*Piora:* '+(o.dor_piora||'-')+'\n'+
+    '\n*Saúde:* '+(o.an_comorb||'-')+'\n*Cirurgias:* '+(o.an_cirurg||'-')+'\n*Medicações:* '+(o.an_med||'-')+'\n*Atividade física:* '+(o.an_habitos||'-')+
+    '\n\n— — —\nCódigo (não apague): '+codigo(o);
+}
+function validar(o){
+  if(!document.getElementById('consent').checked){alert('Por favor, marque a autorização no final.');return false;}
+  if(!o.id_nome){alert('Por favor, preencha pelo menos o seu nome.');return false;}
+  return true;
+}
+function enviar(){
+  const o=coletar(); if(!validar(o)) return;
+  const num=FISIO_WHATS.replace(/\D/g,'');
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(resumo(o)),'_blank');
+}
+function copiar(){
+  const o=coletar(); if(!o.id_nome){alert('Preencha pelo menos o seu nome.');return;}
+  const cod=codigo(o);
+  navigator.clipboard.writeText(cod).then(()=>alert('Código copiado! Envie para o(a) seu(sua) fisioterapeuta.'))
+    .catch(()=>{ prompt('Copie este código e envie ao(à) fisioterapeuta:', cod); });
+}
+</script>
+</body>
+</html>
