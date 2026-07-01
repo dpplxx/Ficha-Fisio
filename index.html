@@ -237,7 +237,8 @@ html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked n
   <button onclick="novoPaciente()">➕ Novo</button>
   <button class="pb-del" onclick="excluirPaciente()">🗑️ Excluir</button>
   <button onclick="exportarBackup()">💾 Backup geral</button>
-  <button onclick="importarPreAnamnese()">📥 Pré-anamnese</button>
+  <button onclick="enviarPreAnamnese()">📤 Enviar pré-anamnese</button>
+  <button onclick="importarPreAnamnese()">📥 Importar resposta</button>
   <span id="contadorPacientes" class="pb-count"></span>
   <span class="pb-lgpd">🔒 Dados sensíveis (LGPD): salvos só neste navegador. Faça backup regularmente.</span>
 </div>
@@ -1710,6 +1711,15 @@ function cancelarAssinatura(){
         else alert('Erro: '+(j&&j.erro?j.erro:'resposta inesperada'));
       }).catch(e=>alert('Erro: '+e.message));
   });
+}
+
+/* ====================== ENVIAR PRÉ-ANAMNESE ====================== */
+function enviarPreAnamnese(){
+  const tel=(dados&&dados.campos&&dados.campos.id_tel||'').replace(/\D/g,'');
+  const link='dpplxx.github.io/Ficha-Fisio/pre-anamnese.html';
+  const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
+  const num=tel.length>=10?'55'+tel:'';
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
 }
 
 /* ====================== IMPORTAR PRÉ-ANAMNESE ====================== */
