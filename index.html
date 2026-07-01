@@ -1715,11 +1715,18 @@ function cancelarAssinatura(){
 
 /* ====================== ENVIAR PRÉ-ANAMNESE ====================== */
 function enviarPreAnamnese(){
-  const tel=(dados&&dados.campos&&dados.campos.id_tel||'').replace(/\D/g,'');
-  const link='dpplxx.github.io/Ficha-Fisio/pre-anamnese.html';
+  const meuTel=(localStorage.getItem('fisio_whats')||'').replace(/\D/g,'');
+  if(!meuTel){
+    const n=prompt('Digite seu WhatsApp (com DDD, só números):\nEx: 27998904164');
+    if(!n) return;
+    localStorage.setItem('fisio_whats',n.replace(/\D/g,''));
+  }
+  const fisioTel=localStorage.getItem('fisio_whats')||'';
+  const telPaciente=(dados&&dados.campos&&dados.campos.id_tel||'').replace(/\D/g,'');
+  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+fisioTel;
   const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
-  const num=tel.length>=10?'55'+tel:'';
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+  const numDest=telPaciente.length>=10?'55'+telPaciente:'';
+  window.open('https://wa.me/'+numDest+'?text='+encodeURIComponent(msg),'_blank');
 }
 
 /* ====================== IMPORTAR PRÉ-ANAMNESE ====================== */
@@ -1887,7 +1894,11 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     try{ const {error}=await sb.auth.resetPasswordForEmail(email); msg(error?error.message:'Enviamos um link de redefinição para seu e-mail.', !error); }
     catch(e){ msg('Erro de conexão.'); }
   };
-  window.authSair=async function(){ try{ await sb.auth.signOut(); }catch(e){} };
+  window.authSair=async function(){
+    try{ await sb.auth.signOut(); }catch(e){}
+    try{ localStorage.removeItem('fisio_assin_'+((await sb.auth.getUser()).data?.user?.id||'')); }catch(e){}
+    telas('login');
+  };
   window.recheckAssinatura=async function(){
     const pm=$('payMsg'); if(pm){ pm.textContent='Verificando assinatura...'; pm.className='auth-msg ok'; }
     try{ const {data}=await sb.auth.getSession(); await checarAcesso(data.session); }catch(e){ if(pm){ pm.textContent='Erro ao verificar: '+(e.message||e); pm.className='auth-msg err'; } }
