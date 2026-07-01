@@ -1715,18 +1715,22 @@ function cancelarAssinatura(){
 
 /* ====================== ENVIAR PRÉ-ANAMNESE ====================== */
 function enviarPreAnamnese(){
-  const meuTel=(localStorage.getItem('fisio_whats')||'').replace(/\D/g,'');
+  let meuTel=(localStorage.getItem('fisio_whats')||'').replace(/\D/g,'');
   if(!meuTel){
-    const n=prompt('Digite seu WhatsApp (com DDD, só números):\nEx: 27998904164');
+    const n=prompt('Digite seu WhatsApp com DDD (só números):\nEx: 27998904164\n\nSó precisa fazer isso uma vez.');
     if(!n) return;
-    localStorage.setItem('fisio_whats',n.replace(/\D/g,''));
+    meuTel=n.replace(/\D/g,'');
+    localStorage.setItem('fisio_whats',meuTel);
   }
-  const fisioTel=localStorage.getItem('fisio_whats')||'';
-  const telPaciente=(dados&&dados.campos&&dados.campos.id_tel||'').replace(/\D/g,'');
-  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+fisioTel;
+  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+meuTel;
   const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
-  const numDest=telPaciente.length>=10?'55'+telPaciente:'';
-  window.open('https://wa.me/'+numDest+'?text='+encodeURIComponent(msg),'_blank');
+  abrirModal(`<h3>📤 Pré-anamnese — enviar ao paciente</h3>
+    <div class="legend">Copie a mensagem abaixo e cole no WhatsApp do paciente:</div>
+    <textarea id="msgPreA" style="width:100%;min-height:110px;font-size:14px" readonly>${msg}</textarea>
+    <div class="modal-actions">
+      <button onclick="fecharModal()">Fechar</button>
+      <button style="background:var(--azul);color:#fff" onclick="navigator.clipboard.writeText(document.getElementById('msgPreA').value).then(()=>{flash('Mensagem copiada!');fecharModal();})">📋 Copiar mensagem</button>
+    </div>`);
 }
 
 /* ====================== IMPORTAR PRÉ-ANAMNESE ====================== */
