@@ -1,0 +1,15 @@
+{
+  "name": "Ficha de Avaliação Fisioterapêutica",
+  "short_name": "Ficha Fisio",
+  "description": "Ficha de avaliação fisioterapêutica baseada em evidência — testes especiais, escalas validadas e evolução.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f4c81",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
