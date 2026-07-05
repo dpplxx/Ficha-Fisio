@@ -1816,11 +1816,12 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
       <li><span class="ck">✓</span>Agenda e controle financeiro</li>
       <li><span class="ck">✓</span>Funciona no celular e no computador</li>
     </ul>
-    <div class="sell-price"><span id="payPreco">R$ 9,90</span><small>/mês</small></div>
-    <button class="primary" onclick="assinar()">Assinar agora</button>
-    <p class="sell-sec">🔒 Pagamento seguro via Asaas · PIX, cartão ou boleto</p>
+    <div class="sell-price"><span id="payPreco">R$ 14,90</span><small> acesso vitalício</small></div>
+    <button class="primary" onclick="assinar()">Comprar acesso</button>
+    <p class="sell-sec">🔒 Pagamento seguro via Hotmart · PIX · Cartão</p>
     <div class="pay-email" id="payEmail"></div>
     <div class="auth-msg" id="payMsg"></div>
+    <p style="font-size:0.78rem;color:#aaa;margin-top:8px">Acabou de comprar? Clique em <b>Sair</b> abaixo e depois use <b>Esqueci a senha</b> na tela de login para definir sua senha de acesso.</p>
     <div class="auth-links">
       <a onclick="recheckAssinatura()">Já paguei — atualizar</a>
       <a onclick="authSair()">Sair</a>
@@ -1886,8 +1887,12 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
         if(error) msg(error.message||'Não foi possível entrar.');
       }else{
         const {data,error}=await comTimeout(sb.auth.signUp({email,password:pass}));
-        if(error) msg(error.message);
-        else if(!data.session) msg('Conta criada! Confirme pelo link no seu e-mail e depois entre.',true);
+        if(error){
+          if(error.message&&(error.message.toLowerCase().includes('already')||error.message.toLowerCase().includes('registered')||error.message.toLowerCase().includes('cadastrado'))){
+            msg('Este e-mail já tem uma conta. Use "Esqueci a senha" para definir sua senha e entrar.',false);
+          } else { msg(error.message); }
+        }
+        else if(!data.session) msg('Conta criada! Verifique seu e-mail para confirmar o acesso. Se você acabou de comprar, use "Esqueci a senha" para entrar diretamente.',true);
       }
     }catch(e){ msg('Erro de conexão: '+(e.message||e)); }
     btn.disabled=false; btn.textContent=txt;
