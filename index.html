@@ -1884,16 +1884,20 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     try{
       if(modo==='login'){
         const {error}=await comTimeout(sb.auth.signInWithPassword({email,password:pass}));
-        if(error) msg(error.message||'Não foi possível entrar.');
+        if(error){
+          const em=typeof error.message==='string'&&error.message&&error.message!=='{}'?error.message:'E-mail ou senha incorretos. Se você acabou de comprar, clique em "Esqueci a senha" para configurar sua senha.';
+          msg(em);
+        }
       }else{
         const {data,error}=await comTimeout(sb.auth.signUp({email,password:pass}));
         if(error){
-          if(error.message&&(error.message.toLowerCase().includes('already')||error.message.toLowerCase().includes('registered')||error.message.toLowerCase().includes('cadastrado'))){
+          const em=typeof error.message==='string'?error.message:'';
+          if(em&&(em.toLowerCase().includes('already')||em.toLowerCase().includes('registered')||em.toLowerCase().includes('cadastrado'))){
             msg('Este e-mail já tem uma conta. Use "Esqueci a senha" para definir sua senha e entrar.',false);
-          } else { msg(typeof error.message==='string'&&error.message ? error.message : 'Erro ao criar conta. Tente novamente.'); }
-        } else if(!data.session) msg('Conta criada! Verifique seu e-mail para confirmar o acesso. Se você acabou de comprar, use "Esqueci a senha" para entrar diretamente.',true);
+          } else { msg(em&&em!=='{}'?em:'Erro ao criar conta. Tente novamente.'); }
+        } else if(!data.session) msg('Conta criada! Se você acabou de comprar, clique em "Esqueci a senha" para configurar sua senha e entrar.',true);
       }
-    }catch(e){ msg('Erro de conexão: '+(e.message||e)); }
+    }catch(e){ const em=e&&typeof e.message==='string'&&e.message?e.message:'Erro de conexão. Verifique sua internet e tente novamente.'; msg(em); }
     btn.disabled=false; btn.textContent=txt;
   };
   window.authReset=async function(){
