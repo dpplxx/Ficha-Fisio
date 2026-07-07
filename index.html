@@ -1,1930 +1,1106 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0f4c81">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ficha Fisio">
-<link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<title>Ficha de Avaliação Fisioterapêutica — Baseada em Evidência</title>
-<script>
-/* ===== Configuração do login (Supabase) ===== */
-window.SUPA_URL='https://fdjofjxbfwdwzjuwqpkw.supabase.co';
-window.SUPA_ANON='sb_publishable_PkF0rYNRF7XwxccMNQCYDg_P0mOjkHe';
-window.AUTH_ATIVO = !!(window.SUPA_ANON && window.SUPA_ANON.indexOf('COLE')===-1);
-if(window.AUTH_ATIVO) document.documentElement.classList.add('locked');
-window.PAY_URL='https://pay.hotmart.com/J106573568R'; /* link de assinatura Hotmart */
-window.PAY_PRECO='R$ 14,90'; /* preço exibido na tela de assinatura */
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root{
-  --azul:#0f4c81; --azul2:#1769aa; --claro:#eef4fa; --borda:#cdd9e5;
-  --verde:#1b7f4b; --amarelo:#b8860b; --vermelho:#b3261e; --cinza:#5b6b7b;
-  --bg:#f4f6f9; --card:#fff; --txt:#1b2733;
-}
-*{box-sizing:border-box}
-body{font-family:"Segoe UI",system-ui,Arial,sans-serif;margin:0;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.45}
-header.app{background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-header.app h1{font-size:19px;margin:0;font-weight:600}
-header.app .sub{font-size:12px;opacity:.85}
-.toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-button{cursor:pointer;border:none;border-radius:6px;padding:8px 13px;font-size:13px;font-weight:600;background:#fff;color:var(--azul)}
-button.ghost{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
-button:hover{opacity:.9}
-nav.tabs{display:flex;gap:4px;background:#dde6ef;padding:6px 10px 0;overflow-x:auto;border-bottom:2px solid var(--azul)}
-nav.tabs button{background:transparent;color:var(--cinza);border-radius:8px 8px 0 0;padding:9px 14px;white-space:nowrap;font-weight:600}
-nav.tabs button.active{background:var(--card);color:var(--azul);box-shadow:0 -2px 6px rgba(0,0,0,.06)}
-main{max-width:1080px;margin:0 auto;padding:18px}
-.tab{display:none}
-.tab.active{display:block}
-.card{background:var(--card);border:1px solid var(--borda);border-radius:10px;padding:16px 18px;margin-bottom:16px}
-.card h2{margin:0 0 12px;font-size:16px;color:var(--azul);border-bottom:2px solid var(--claro);padding-bottom:6px}
-.card h3{font-size:14px;color:var(--azul2);margin:16px 0 8px}
-.grid{display:grid;gap:10px}
-.g2{grid-template-columns:1fr 1fr}
-.g3{grid-template-columns:1fr 1fr 1fr}
-.g4{grid-template-columns:repeat(4,1fr)}
-@media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr}}
-label.field{display:flex;flex-direction:column;font-size:12px;font-weight:600;color:var(--cinza);gap:3px}
-input,select,textarea{font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--borda);border-radius:6px;background:#fff;color:var(--txt);width:100%}
-textarea{resize:vertical;min-height:60px;font-weight:400}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--azul2);border-color:var(--azul2)}
-.hint{font-size:11px;color:var(--cinza);font-weight:400;margin-top:2px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th,td{border:1px solid var(--borda);padding:6px 8px;text-align:left;vertical-align:top}
-th{background:var(--claro);color:var(--azul);font-weight:600}
-.test-row{display:grid;grid-template-columns:1.6fr .9fr 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--borda)}
-.test-row .name{font-weight:600}
-.test-row .name small{display:block;font-weight:400;color:var(--cinza);font-size:11px}
-.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--claro);color:var(--azul2);font-weight:600;margin:2px 4px 2px 0}
-.scale-score{font-size:15px;font-weight:700;padding:8px 12px;border-radius:8px;background:var(--claro);color:var(--azul);display:inline-block;margin-top:8px}
-.scale-item{padding:8px 0;border-bottom:1px dashed var(--borda)}
-.scale-item p{margin:0 0 6px;font-weight:600}
-.opt{display:flex;align-items:center;gap:6px;font-weight:400;font-size:12.5px;margin:2px 0}
-.opt input{width:auto}
-.badge{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;color:#fff}
-.b-green{background:var(--verde)} .b-yellow{background:var(--amarelo)} .b-red{background:var(--vermelho)} .b-blue{background:var(--azul2)}
-.region-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.region-btns button{background:var(--claro);color:var(--azul2);border:1px solid var(--borda)}
-.region-btns button.active{background:var(--azul);color:#fff}
-.evo-session{border:1px solid var(--borda);border-radius:8px;padding:12px;margin-bottom:10px;background:#fbfdff}
-.evo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.evo-head strong{color:var(--azul)}
-.del{background:#fdeceb;color:var(--vermelho);padding:5px 9px}
-.ref{font-size:11px;color:var(--cinza);font-style:italic;margin-top:4px}
-.reflinks{display:flex;gap:6px;margin-top:5px}
-.reflink{font-size:11px;font-weight:600;text-decoration:none;background:var(--claro);color:var(--azul2);padding:2px 8px;border-radius:20px;border:1px solid var(--borda)}
-.reflink:hover{background:var(--azul);color:#fff}
-.seg-head{flex-basis:100%;width:100%;font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 2px;border-bottom:1px solid var(--borda);padding-bottom:3px}
-.legend{font-size:11.5px;color:var(--cinza);background:var(--claro);padding:8px 10px;border-radius:6px;margin-bottom:10px}
-/* Barra de pacientes */
-.patient-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#11436f;color:#fff;padding:8px 16px;font-size:13px}
-.patient-bar .pb-label{font-weight:600}
-.patient-bar select,.patient-bar input{padding:5px 8px;border-radius:6px;border:1px solid #2d6da3;background:#fff;color:#1b2733;font-size:13px}
-.patient-bar select{min-width:190px;font-weight:600}
-.patient-bar button{padding:5px 10px;font-size:12px;background:#fff;color:var(--azul)}
-.patient-bar .pb-del{background:#fdeceb;color:var(--vermelho)}
-.patient-bar .pb-count{font-size:11px;opacity:.85}
-.patient-bar .pb-lgpd{font-size:11px;opacity:.9;margin-left:auto;max-width:280px}
-/* Mapa corporal de dor */
-.bodymaps{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
-.bm-title{font-weight:600;color:var(--azul2);margin-bottom:4px;font-size:12px;text-align:center}
-.bodymap{position:relative;width:150px;height:400px;cursor:crosshair;user-select:none;background:#f7fafd;border:1px solid var(--borda);border-radius:8px}
-.bodymap svg{width:100%;height:100%;display:block}
-.pain-dot{position:absolute;width:24px;height:24px;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer;z-index:2}
-.bm-legend{font-size:11.5px;color:var(--cinza);max-width:190px}
-.bm-gradient{height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(120,75%,42%),hsl(60,80%,45%),hsl(0,75%,48%));margin:5px 0}
-/* Gráfico de evolução */
-#grafico svg{width:100%;height:auto;max-width:660px}
-/* Barra de módulos (controle segmentado) */
-.mode-bar{display:flex;justify-content:center;gap:4px;background:#dde6ef;padding:8px;flex-wrap:wrap}
-.mode-btn{background:transparent;color:var(--cinza);border:none;border-radius:8px;padding:8px 16px;font-weight:600}
-.mode-btn.active{background:#fff;color:var(--azul);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.mod-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-/* Agenda */
-.ag-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}
-.ag-day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border:1px solid var(--borda);border-radius:8px;background:#fff;cursor:pointer;position:relative}
-.ag-day .dow{font-size:11px;color:var(--cinza)}
-.ag-day .num{font-size:15px;font-weight:600}
-.ag-day.sel{background:var(--azul);border-color:var(--azul)}
-.ag-day.sel .dow,.ag-day.sel .num{color:#fff}
-.ag-day .dot{position:absolute;top:3px;right:4px;font-size:9px;background:var(--azul2);color:#fff;border-radius:10px;padding:0 4px;font-weight:700}
-.ag-day.sel .dot{background:#fff;color:var(--azul)}
-.ag-item{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--borda);cursor:pointer}
-.ag-item:hover{background:#f7fafd}
-.ag-hora{width:52px;font-weight:600;color:var(--cinza)}
-.ag-bar{width:4px;align-self:stretch;border-radius:2px;min-height:32px}
-.ag-info{flex:1}
-.ag-nome{font-weight:600}
-.ag-tipo{font-size:12px;color:var(--cinza)}
-.ag-status{font-size:11px;padding:2px 10px;border-radius:20px;border:1px solid;font-weight:600;white-space:nowrap}
-/* Financeiro */
-.fin-monthnav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px}
-.fin-monthnav button{background:var(--claro);color:var(--azul);padding:4px 12px;font-size:16px}
-.fin-monthnav span{font-weight:600;min-width:140px;text-align:center;text-transform:capitalize}
-.fin-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.fin-card2{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:12px}
-.fin-card2 .lbl{font-size:12px;color:var(--cinza)}
-.fin-card2 .val{font-size:18px;font-weight:700;margin-top:2px}
-#finChart svg{width:100%;height:auto;max-width:440px;display:block;margin:0 auto 14px}
-.fin-tx{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--borda);border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff}
-.fin-tx:hover{background:#f7fafd}
-.fin-ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:none}
-.fin-txinfo{flex:1}
-.fin-txdesc{font-weight:600}
-.fin-txsub{font-size:12px;color:var(--cinza)}
-.fin-val{font-weight:700;white-space:nowrap}
-@media(max-width:760px){.fin-cards{grid-template-columns:repeat(2,1fr)}}
-/* Modal */
-.modal-ov{position:fixed;inset:0;background:rgba(15,30,50,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
-.modal{background:#fff;border-radius:12px;max-width:480px;width:100%;max-height:90vh;overflow:auto;padding:18px}
-.modal h3{margin:0 0 12px;color:var(--azul);font-size:16px}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
-/* Login / paywall */
-html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked nav.tabs, html.locked header.app .toolbar{visibility:hidden}
-.auth-gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--azul),var(--azul2));display:flex;align-items:center;justify-content:center;z-index:500;padding:18px}
-.auth-card{background:#fff;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
-.auth-card h2{margin:0 0 4px;color:var(--azul);font-size:20px;border:none;padding:0}
-.auth-card p.sub{margin:0 0 18px;color:var(--cinza);font-size:13px}
-.auth-card label{display:block;font-size:12px;font-weight:600;color:var(--cinza);margin-bottom:3px}
-.auth-card input{width:100%;margin-bottom:12px}
-.auth-card button.primary{width:100%;background:var(--azul);color:#fff;padding:11px;font-size:15px;margin-top:4px}
-.auth-card button.primary:disabled{opacity:.6}
-.auth-links{display:flex;justify-content:space-between;margin-top:14px;font-size:12.5px}
-.auth-links a{color:var(--azul2);cursor:pointer;text-decoration:none}
-.auth-msg{font-size:12.5px;margin-top:10px;padding:8px 10px;border-radius:6px;display:none}
-.auth-msg.err{background:#fdeceb;color:var(--vermelho);display:block}
-.auth-msg.ok{background:#e6f4ec;color:var(--verde);display:block}
-.sell-list{list-style:none;padding:0;margin:14px 0;font-size:13px}
-.sell-list li{padding:3px 0;color:#1b2733}
-.sell-list li .ck{color:var(--verde);font-weight:700;margin-right:6px}
-.sell-price{text-align:center;margin:6px 0 14px;color:var(--azul)}
-.sell-price span{font-size:30px;font-weight:700}
-.sell-price small{font-size:14px;color:var(--cinza)}
-.sell-sec{font-size:11px;color:var(--cinza);text-align:center;margin:10px 0 0}
-.pay-email{font-size:12px;background:#fff7e6;border:1px solid #f0c36d;color:#8a6100;border-radius:6px;padding:8px 10px;margin-top:10px;text-align:center;display:none;word-break:break-all}
-.pay-email.show{display:block}
-.print-only{display:none}
-/* ====== RESPONSIVO / CELULAR ====== */
-@media(max-width:760px){
-  body{font-size:13.5px}
-  header.app{padding:10px 14px}
-  header.app h1{font-size:16px}
-  header.app .sub{display:none}
-  .toolbar{width:100%;margin-left:0}
-  .toolbar button{flex:1 1 40%;font-size:12px;padding:9px 8px}
-  .patient-bar{padding:8px 12px;gap:6px}
-  .patient-bar select{min-width:0;flex:1 1 100%}
-  #buscaPaciente{flex:1 1 auto;max-width:none}
-  .patient-bar button{flex:1 1 auto}
-  .patient-bar .pb-lgpd{margin-left:0;max-width:none;flex-basis:100%}
-  main{padding:12px 10px}
-  .card{padding:12px}
-  nav.tabs button{padding:8px 11px}
-  .card table{display:block;max-width:100%;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
-  .test-row{grid-template-columns:1fr}
-  input,select,textarea{font-size:16px} /* evita zoom automático no iOS */
-  .bodymap{width:44vw;max-width:160px;height:auto;aspect-ratio:120/320}
-  .scale-score{font-size:14px}
-}
-/* ====== IMPRESSÃO ====== */
-@media print{
-  header.app,.patient-bar,nav.tabs,.no-print{display:none!important}
-  .tab{display:block!important;page-break-inside:auto}
-  .print-only{display:block}
-  body{background:#fff;font-size:11px}
-  .card{box-shadow:none;break-inside:avoid;border:none;padding:4px 0;margin-bottom:8px}
-  .card table{display:table!important;white-space:normal!important}
-  .hide-print{display:none!important}
-  .clinic-card{display:none!important}
-  .print-header{display:flex!important;align-items:center;gap:14px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px}
-  .print-header img{max-height:64px;max-width:170px}
-  .print-header .ph-clinic{font-weight:700;font-size:14px}
-  .print-header .ph-meta{margin-left:auto;text-align:right;font-size:11px}
-  .print-sign{display:block!important;margin-top:30px;text-align:center;page-break-inside:avoid}
-  .print-sign .line{border-top:1px solid #000;width:60%;margin:46px auto 4px}
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha Fisio — Avaliação Fisioterapêutica Digital</title>
+  <meta name="description" content="Digitalize suas fichas de avaliação fisioterapêutica. Acesse de qualquer lugar, no celular ou computador. Simples, completo e baseado em evidência.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #1a4f8e;
+      --blue-mid:   #2563b0;
+      --blue-light: #3b82f6;
+      --blue-pale:  #eff6ff;
+      --text:       #0f172a;
+      --muted:      #475569;
+      --border:     #e2e8f0;
+      --white:      #ffffff;
+      --green:      #16a34a;
+      --radius:     14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 1.15rem; color: var(--blue);
+      text-decoration: none;
+    }
+    .nav-logo svg { width: 32px; height: 32px; }
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-ghost {
+      padding: 8px 16px; border-radius: 8px;
+      color: var(--blue); font-weight: 500; font-size: .9rem;
+      text-decoration: none; transition: background .15s;
+    }
+    .btn-ghost:hover { background: var(--blue-pale); }
+    .btn-primary {
+      padding: 9px 20px; border-radius: 8px;
+      background: var(--blue); color: #fff;
+      font-weight: 600; font-size: .9rem;
+      text-decoration: none; transition: background .15s;
+    }
+    .btn-primary:hover { background: var(--blue-mid); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #0f2d5a 0%, #1a4f8e 50%, #2563b0 100%);
+      color: #fff;
+      padding: 80px 24px 0;
+      overflow: hidden;
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: end;
+    }
+    .hero-text { padding-bottom: 80px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      padding: 5px 12px; border-radius: 99px;
+      font-size: .8rem; font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .hero-badge span { color: #86efac; }
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800; line-height: 1.15;
+      margin-bottom: 18px;
+    }
+    h1 em { font-style: normal; color: #93c5fd; }
+    .hero-sub {
+      font-size: 1.1rem; color: rgba(255,255,255,.8);
+      margin-bottom: 32px; max-width: 440px;
+    }
+    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-hero-primary {
+      padding: 14px 28px; border-radius: 10px;
+      background: #fff; color: var(--blue);
+      font-weight: 700; font-size: 1rem;
+      text-decoration: none; transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    .btn-hero-secondary {
+      padding: 14px 28px; border-radius: 10px;
+      background: rgba(255,255,255,.12);
+      border: 1.5px solid rgba(255,255,255,.3);
+      color: #fff; font-weight: 600; font-size: 1rem;
+      text-decoration: none; transition: background .15s;
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,.2); }
+
+    /* phone mockup */
+    .hero-visual { display: flex; justify-content: center; }
+    .phone-wrap {
+      position: relative; width: 260px;
+      filter: drop-shadow(0 40px 60px rgba(0,0,0,.4));
+    }
+    .phone-frame {
+      width: 260px; border-radius: 36px;
+      background: #0a1a33;
+      border: 6px solid #1e3a5f;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.08);
+    }
+    .phone-notch {
+      height: 28px; background: #0a1a33;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .phone-notch-inner {
+      width: 80px; height: 14px;
+      background: #0d2040; border-radius: 99px;
+    }
+    .phone-screen {
+      background: linear-gradient(160deg, #1a3f70 0%, #2460aa 100%);
+      padding: 24px 16px 32px;
+      min-height: 440px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 0;
+    }
+    .mock-card {
+      background: #fff; border-radius: 16px;
+      padding: 20px 16px; width: 100%;
+      box-shadow: 0 12px 32px rgba(0,0,0,.25);
+    }
+    .mock-logo {
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 10px;
+    }
+    .mock-logo-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mock-logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .mock-logo-text { font-weight: 700; font-size: .9rem; color: var(--blue); }
+    .mock-sub { font-size: .62rem; color: #64748b; margin-bottom: 14px; }
+    .mock-label { font-size: .6rem; color: #334155; font-weight: 600; margin-bottom: 4px; }
+    .mock-input {
+      width: 100%; height: 28px; border-radius: 7px;
+      background: #f1f5f9; border: 1.5px solid #e2e8f0;
+      margin-bottom: 10px;
+    }
+    .mock-btn {
+      width: 100%; height: 32px; border-radius: 8px;
+      background: var(--blue); margin-top: 4px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mock-btn-text { font-size: .65rem; font-weight: 700; color: #fff; }
+    .mock-links {
+      display: flex; justify-content: space-between;
+      margin-top: 10px;
+    }
+    .mock-link { font-size: .55rem; color: var(--blue-light); }
+
+    /* ── LOGOS / SOCIAL PROOF ── */
+    .proof {
+      padding: 20px 24px;
+      background: #f8faff;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .proof p {
+      font-size: .8rem; color: var(--muted); font-weight: 500;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .proof-stars {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-top: 8px;
+    }
+    .stars { color: #f59e0b; font-size: 1rem; }
+    .proof-text { font-size: .9rem; font-weight: 600; color: var(--text); }
+
+    /* ── FEATURES ── */
+    .features {
+      padding: 80px 24px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .section-label {
+      text-align: center; font-size: .8rem; font-weight: 600;
+      color: var(--blue-light); text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 12px;
+    }
+    h2 {
+      text-align: center; font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800; margin-bottom: 12px;
+    }
+    .section-sub {
+      text-align: center; color: var(--muted);
+      max-width: 500px; margin: 0 auto 48px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover {
+      box-shadow: 0 8px 32px rgba(26,79,142,.1);
+      transform: translateY(-3px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--blue-pale); margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: .9rem; color: var(--muted); }
+
+    /* ── FICHA ── */
+    .ficha-section {
+      padding: 80px 24px;
+      background: var(--white);
+    }
+    .ficha-inner {
+      max-width: 1100px; margin: 0 auto;
+    }
+    .ficha-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 56px; align-items: center; margin-top: 48px;
+    }
+    .ficha-tabs {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ficha-tab {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px; border-radius: 12px;
+      border: 1.5px solid var(--border);
+      transition: border-color .15s, background .15s;
+      cursor: pointer;
+    }
+    .ficha-tab:hover {
+      border-color: var(--blue-light);
+      background: var(--blue-pale);
+    }
+    .ficha-tab.active {
+      border-color: var(--blue);
+      background: var(--blue-pale);
+    }
+    .ficha-tab.active .ficha-tab-text h4 { color: var(--blue); }
+    .ficha-tab-icon {
+      font-size: 1.3rem; width: 40px; flex-shrink: 0;
+      text-align: center;
+    }
+    .ficha-tab-text h4 { font-size: .92rem; font-weight: 700; margin-bottom: 2px; }
+    .ficha-tab-text p { font-size: .78rem; color: var(--muted); }
+
+    .ficha-phone {
+      display: flex; justify-content: center;
+    }
+    .ficha-phone-frame {
+      width: 240px; border-radius: 32px;
+      background: #0a1a33;
+      border: 5px solid #1e3a5f;
+      overflow: hidden;
+      box-shadow: 0 32px 64px rgba(0,0,0,.25);
+    }
+    .ficha-phone-notch {
+      height: 24px; background: #0a1a33;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ficha-phone-notch-inner {
+      width: 70px; height: 12px;
+      background: #0d2040; border-radius: 99px;
+    }
+    .ficha-screen {
+      background: #f1f5f9;
+      padding: 0;
+      min-height: 420px;
+    }
+    .ficha-screen-header {
+      background: var(--blue);
+      padding: 10px 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ficha-screen-header-icon {
+      background: rgba(255,255,255,.2);
+      border-radius: 6px; width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem;
+    }
+    .ficha-screen-header-text {
+      font-size: .7rem; color: #fff; font-weight: 600;
+    }
+    .ficha-screen-tabs {
+      background: #fff;
+      display: flex; overflow-x: auto; gap: 0;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 0 4px;
+    }
+    .fs-tab {
+      padding: 6px 8px; font-size: .52rem; font-weight: 600;
+      color: #64748b; white-space: nowrap; border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .fs-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .ficha-screen-body { padding: 10px 12px; }
+    .fs-section-title {
+      font-size: .62rem; font-weight: 700; color: #1e40af;
+      margin-bottom: 6px; margin-top: 8px;
+    }
+    .fs-field {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 5px 8px; margin-bottom: 5px;
+    }
+    .fs-field-label { font-size: .5rem; color: #64748b; margin-bottom: 2px; }
+    .fs-field-val { font-size: .58rem; color: #1e293b; font-weight: 500; }
+    .fs-eva {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 6px 8px; margin-bottom: 5px;
+    }
+    .fs-eva-label { font-size: .5rem; color: #64748b; margin-bottom: 4px; }
+    .fs-eva-bar {
+      height: 6px; border-radius: 3px;
+      background: linear-gradient(90deg, #22c55e 0%, #eab308 50%, #ef4444 100%);
+      position: relative;
+    }
+    .fs-eva-marker {
+      position: absolute; top: -2px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #1e40af; border: 1.5px solid #fff;
+      left: 20%;
+    }
+
+    /* ── PWA ── */
+    .pwa-section {
+      padding: 80px 24px;
+      background: linear-gradient(135deg, #0f2d5a 0%, #1a4f8e 100%);
+      color: #fff;
+    }
+    .pwa-inner { max-width: 1000px; margin: 0 auto; }
+    .pwa-section .section-label { color: #93c5fd; }
+    .pwa-section h2 { color: #fff; }
+    .pwa-section .section-sub { color: rgba(255,255,255,.75); }
+    .pwa-steps {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 40px; margin-top: 48px;
+    }
+    .pwa-device { }
+    .pwa-device-title {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 1rem; margin-bottom: 20px;
+    }
+    .pwa-device-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .pwa-step-list { display: flex; flex-direction: column; gap: 14px; }
+    .pwa-step-item {
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .pwa-step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      border: 1.5px solid rgba(255,255,255,.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .pwa-step-item p { font-size: .88rem; color: rgba(255,255,255,.85); padding-top: 3px; }
+    .pwa-step-item strong { color: #fff; }
+    .pwa-note {
+      margin-top: 40px; padding: 16px 20px;
+      background: rgba(255,255,255,.1); border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.15);
+      font-size: .85rem; color: rgba(255,255,255,.8);
+      text-align: center;
+    }
+
+    .fs-check {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 8px; margin-bottom: 2px;
+      font-size: .55rem;
+    }
+    .fs-check.ok { color: #16a34a; }
+    .fs-check.warn { color: #dc2626; }
+    .fs-adm {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 8px; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 4px;
+    }
+    .fs-adm-label { font-size: .5rem; color: #64748b; }
+    .fs-adm-val { font-size: .6rem; font-weight: 700; color: #1e293b; }
+    .fs-adm-ref { font-size: .44rem; color: #94a3b8; }
+    .fs-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 99px;
+      font-size: .48rem; font-weight: 600;
+      background: #fef3c7; color: #92400e; margin: 3px 0;
+    }
+    .fs-bar-wrap { margin: 3px 8px; }
+    .fs-bar-track { height: 5px; background: #e2e8f0; border-radius: 3px; }
+    .fs-bar-fill { height: 100%; border-radius: 3px; background: var(--blue-light); }
+    .fs-mini-chart {
+      display: flex; align-items: flex-end; gap: 8px;
+      padding: 8px 10px; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 6px;
+    }
+    .fs-bar-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .fs-bar-block { width: 20px; border-radius: 2px 2px 0 0; }
+    .fs-bar-lbl { font-size: .42rem; color: #64748b; }
+
+    @media (max-width: 768px) {
+      .ficha-layout { grid-template-columns: 1fr; }
+      .ficha-phone { display: none; }
+      .pwa-steps { grid-template-columns: 1fr; }
+    }
+
+    /* ── COMO FUNCIONA ── */
+    .how {
+      background: var(--blue-pale);
+      padding: 80px 24px;
+    }
+    .how-inner { max-width: 900px; margin: 0 auto; }
+    .steps {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px; margin-top: 48px;
+    }
+    .step { text-align: center; }
+    .step-num {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.2rem;
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: .9rem; color: var(--muted); }
+
+    /* ── PRICING ── */
+    .pricing {
+      padding: 80px 24px;
+      max-width: 800px; margin: 0 auto;
+    }
+    .pricing-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-top: 48px;
+    }
+    .plan {
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 32px 28px; position: relative;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .plan:hover { border-color: var(--blue-light); box-shadow: 0 8px 32px rgba(26,79,142,.1); }
+    .plan-popular {
+      border-color: var(--blue);
+      box-shadow: 0 8px 32px rgba(26,79,142,.15);
+    }
+    .badge-popular {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--blue); color: #fff;
+      font-size: .72rem; font-weight: 700;
+      padding: 4px 14px; border-radius: 99px;
+      white-space: nowrap;
+    }
+    .plan-name { font-weight: 700; font-size: 1rem; color: var(--muted); margin-bottom: 16px; }
+    .plan-price {
+      display: flex; align-items: baseline; gap: 4px;
+      margin-bottom: 4px;
+    }
+    .price-currency { font-size: .9rem; font-weight: 600; color: var(--text); }
+    .price-value { font-size: 2.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .price-period { font-size: .85rem; color: var(--muted); }
+    .plan-detail { font-size: .82rem; color: var(--muted); margin-bottom: 24px; min-height: 20px; }
+    .plan-features { list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+    .plan-features li {
+      font-size: .9rem; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .plan-features li::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .btn-plan {
+      display: block; width: 100%;
+      padding: 13px; border-radius: 10px;
+      font-weight: 700; font-size: .95rem;
+      text-align: center; text-decoration: none;
+      transition: background .15s, transform .15s;
+    }
+    .btn-plan-outline {
+      border: 2px solid var(--blue); color: var(--blue);
+    }
+    .btn-plan-outline:hover { background: var(--blue-pale); }
+    .btn-plan-filled {
+      background: var(--blue); color: #fff;
+      box-shadow: 0 4px 12px rgba(26,79,142,.3);
+    }
+    .btn-plan-filled:hover { background: var(--blue-mid); transform: translateY(-1px); }
+
+    /* ── FAQ ── */
+    .faq {
+      padding: 80px 24px;
+      background: var(--blue-pale);
+    }
+    .faq-inner { max-width: 680px; margin: 0 auto; }
+    .faq-list { margin-top: 40px; display: flex; flex-direction: column; gap: 0; }
+    details {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+    details:first-child { border-top: 1px solid var(--border); }
+    summary {
+      font-weight: 600; font-size: .95rem; cursor: pointer;
+      list-style: none; display: flex; justify-content: space-between; align-items: center;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+"; font-size: 1.3rem; color: var(--blue);
+      transition: transform .2s;
+    }
+    details[open] summary::after { transform: rotate(45deg); }
+    details p { font-size: .9rem; color: var(--muted); margin-top: 12px; line-height: 1.7; }
+
+    /* ── CTA FINAL ── */
+    .cta-final {
+      padding: 80px 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #0f2d5a 0%, #2563b0 100%);
+      color: #fff;
+    }
+    .cta-final h2 { color: #fff; margin-bottom: 16px; }
+    .cta-final p { color: rgba(255,255,255,.8); margin-bottom: 32px; }
+    .cta-final .btn-hero-primary { display: inline-block; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0a1a33; color: rgba(255,255,255,.5);
+      padding: 32px 24px; text-align: center;
+      font-size: .82rem;
+    }
+    footer a { color: rgba(255,255,255,.6); text-decoration: none; }
+    footer a:hover { color: #fff; }
+    .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .hero-text { padding-bottom: 60px; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .plan-popular { order: -1; }
+      .nav-actions .btn-ghost { display: none; }
+    }
+  </style>
 </head>
 <body>
-<header class="app">
-  <div>
-    <h1 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 64 64" width="26" height="26" style="flex:none" aria-hidden="true"><circle cx="32" cy="19" r="5.5" fill="#fff"/><path d="M32 25 C27 29 23 29 19 26 M32 25 C37 27 43 26 47 22 M32 25 L32 39 L25 51 M32 39 L40 50" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 48 Q32 39 50 48" fill="none" stroke="#9cc3e0" stroke-width="2.4" stroke-linecap="round"/></svg>Ficha de Avaliação Fisioterapêutica</h1>
-    <div class="sub">Prática baseada em evidência · Testes especiais · Escalas validadas · Evolução</div>
-  </div>
-  <div class="toolbar no-print">
-    <button class="ghost" onclick="salvar()">💾 Salvar</button>
-    <button class="ghost" onclick="exportarJSON()">⬇️ Exportar</button>
-    <button class="ghost" onclick="document.getElementById('imp').click()">⬆️ Importar</button>
-    <input id="imp" type="file" accept=".json" style="display:none" onchange="importarJSON(event)">
-    <button class="ghost" onclick="imprimir(false)">🖨️ Imprimir tudo</button>
-    <button class="ghost" onclick="imprimir(true)">📄 Imprimir resumo</button>
-    <button class="ghost" onclick="limparTudo()">🗑️ Limpar</button>
-    <button class="ghost" id="btnSair" style="display:none" onclick="authSair()">🚪 Sair</button>
-  </div>
-</header>
 
-<div class="patient-bar no-print">
-  <span class="pb-label">👤 Paciente:</span>
-  <select id="selPaciente" onchange="trocarPaciente(this.value)"></select>
-  <input id="buscaPaciente" placeholder="🔎 buscar..." oninput="atualizarSeletorPacientes()" style="max-width:150px">
-  <button onclick="novoPaciente()">➕ Novo</button>
-  <button class="pb-del" onclick="excluirPaciente()">🗑️ Excluir</button>
-  <button onclick="exportarBackup()">💾 Backup geral</button>
-  <button onclick="enviarPreAnamnese()">📤 Enviar pré-anamnese</button>
-  <button onclick="importarPreAnamnese()">📥 Importar resposta</button>
-  <span id="contadorPacientes" class="pb-count"></span>
-  <span class="pb-lgpd">🔒 Dados sensíveis (LGPD): salvos só neste navegador. Faça backup regularmente.</span>
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#1a4f8e"/>
+        <circle cx="16" cy="9" r="3" fill="white"/>
+        <path d="M16 13c-3 0-5 2-5 4v2h10v-2c0-2-2-4-5-4z" fill="white"/>
+        <path d="M11 20l2 6h6l2-6" fill="white"/>
+        <path d="M14 20l-1 3M18 20l1 3" stroke="#1a4f8e" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      Ficha Fisio
+    </a>
+    <div class="nav-actions">
+      <a href="/app/" class="btn-ghost" target="_blank">Entrar</a>
+      <a href="#planos" class="btn-primary">Assinar agora</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <span>●</span> Lançamento — vagas limitadas
+      </div>
+      <h1>Sua ficha de avaliação <em>sempre com você</em></h1>
+      <p class="hero-sub">
+        Avaliação fisioterapêutica completa, baseada em evidência, direto no celular. Sem papel, sem perda de dados, acessível de qualquer lugar.
+      </p>
+      <div class="hero-ctas">
+        <a href="#planos" class="btn-hero-primary">Começar por R$&nbsp;9,90/mês</a>
+        <a href="#como-funciona" class="btn-hero-secondary">Como funciona</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="phone-wrap">
+        <div class="phone-frame">
+          <div class="phone-notch"><div class="phone-notch-inner"></div></div>
+          <div class="phone-screen">
+            <div class="mock-card">
+              <div class="mock-logo">
+                <div class="mock-logo-icon">
+                  <svg viewBox="0 0 16 16"><circle cx="8" cy="4" r="2.5" fill="white"/><path d="M8 7c-2.5 0-4 1.5-4 3v1.5h8V10c0-1.5-1.5-3-4-3z" fill="white"/><path d="M5 12l1 3h4l1-3" fill="white"/></svg>
+                </div>
+                <span class="mock-logo-text">Ficha Fisio</span>
+              </div>
+              <div class="mock-sub">Entre para acessar sua ficha de avaliação.</div>
+              <div class="mock-label">E-mail</div>
+              <div class="mock-input"></div>
+              <div class="mock-label">Senha</div>
+              <div class="mock-input"></div>
+              <div class="mock-btn"><span class="mock-btn-text">Entrar</span></div>
+              <div class="mock-links">
+                <span class="mock-link">Criar conta</span>
+                <span class="mock-link">Esqueci a senha</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<div class="proof">
+  <p>Usado por fisioterapeutas em todo o Brasil</p>
+  <div class="proof-stars">
+    <span class="stars">★★★★★</span>
+    <span class="proof-text">Simples, completo e sempre atualizado</span>
+  </div>
 </div>
 
-<div class="mode-bar no-print">
-  <button class="mode-btn active" data-mode="ficha" onclick="setView('ficha')">📋 Ficha do paciente</button>
-  <button class="mode-btn" data-mode="agenda" onclick="setView('agenda')">📅 Agenda</button>
-  <button class="mode-btn" data-mode="financeiro" onclick="setView('financeiro')">💰 Financeiro</button>
-</div>
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-label">Por que o Ficha Fisio</div>
+  <h2>Tudo que você precisa numa avaliação</h2>
+  <p class="section-sub">Criado por e para fisioterapeutas, com os campos certos e sem complicação.</p>
 
-<nav class="tabs no-print" id="tabs"></nav>
-
-<main>
-  <div class="print-only print-header" id="printHeader">
-    <img id="printLogo" style="display:none">
-    <div>
-      <div class="ph-clinic" id="phClinic"></div>
-      <div id="phContato" style="font-size:11px"></div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>Funciona no celular</h3>
+      <p>Interface otimizada pro toque. Preencha a ficha na clínica, em domicílio ou em qualquer lugar.</p>
     </div>
-    <div class="ph-meta" id="phMeta"></div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Avaliação completa</h3>
+      <p>Anamnese, inspeção, palpação, testes funcionais e mais — todos os campos que uma boa avaliação exige.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Dados seguros</h3>
+      <p>Informações dos seus pacientes armazenadas com segurança na nuvem. Acesse de qualquer dispositivo.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Rápido e offline</h3>
+      <p>Funciona mesmo sem internet. Os dados sincronizam automaticamente quando você se conectar.</p>
+    </div>
   </div>
+</section>
 
-  <!-- 1. IDENTIFICAÇÃO / ANAMNESE -->
-  <section class="tab" data-tab="Identificação">
-    <div class="card clinic-card">
-      <h2>⚙️ Dados da Clínica (para o cabeçalho da impressão)</h2>
-      <div class="legend">Aparecem no topo ao imprimir/gerar PDF. São salvos globalmente (valem para todos os pacientes deste navegador).</div>
-      <div class="grid g3">
-        <label class="field">Nome da clínica / profissional<input id="cl_nome" oninput="salvarClinica()"></label>
-        <label class="field">Contato (telefone / endereço)<input id="cl_contato" oninput="salvarClinica()"></label>
-        <label class="field">Assinatura no rodapé (nome / CREFITO)<input id="cl_assinatura" oninput="salvarClinica()"></label>
+<!-- FICHA COMPLETA -->
+<section class="ficha-section">
+  <div class="ficha-inner">
+    <div class="section-label">O que tem dentro</div>
+    <h2>Uma ficha completa, baseada em evidência</h2>
+    <p class="section-sub">Clique em cada seção para ver como aparece no app.</p>
+
+    <div class="ficha-layout">
+      <div class="ficha-tabs">
+        <div class="ficha-tab active" onclick="switchFichaTab(this,'panel-ident')">
+          <div class="ficha-tab-icon">🪪</div>
+          <div class="ficha-tab-text">
+            <h4>Identificação & Anamnese</h4>
+            <p>Dados do paciente, queixa principal, histórico e bandeiras vermelhas</p>
+          </div>
+        </div>
+        <div class="ficha-tab" onclick="switchFichaTab(this,'panel-dor')">
+          <div class="ficha-tab-icon">🩻</div>
+          <div class="ficha-tab-text">
+            <h4>Dor & Inspeção</h4>
+            <p>EVA/END, mapa corporal, inspeção estática e dinâmica, palpação</p>
+          </div>
+        </div>
+        <div class="ficha-tab" onclick="switchFichaTab(this,'panel-articular')">
+          <div class="ficha-tab-icon">🦴</div>
+          <div class="ficha-tab-text">
+            <h4>Avaliação Articular</h4>
+            <p>ADM com valores de referência, força MRC/Oxford e testes especiais</p>
+          </div>
+        </div>
+        <div class="ficha-tab" onclick="switchFichaTab(this,'panel-escalas')">
+          <div class="ficha-tab-icon">📊</div>
+          <div class="ficha-tab-text">
+            <h4>Escalas Validadas</h4>
+            <p>Questionários com pontuação automática e interpretação clínica</p>
+          </div>
+        </div>
+        <div class="ficha-tab" onclick="switchFichaTab(this,'panel-neuro')">
+          <div class="ficha-tab-icon">🧠</div>
+          <div class="ficha-tab-text">
+            <h4>Neurofuncional & Gerontológica</h4>
+            <p>Ashworth, reflexos, sensibilidade, marcha e avaliação geriátrica</p>
+          </div>
+        </div>
+        <div class="ficha-tab" onclick="switchFichaTab(this,'panel-diag')">
+          <div class="ficha-tab-icon">🎯</div>
+          <div class="ficha-tab-text">
+            <h4>Diagnóstico & Plano + Evolução</h4>
+            <p>Hipótese diagnóstica, metas funcionais e gráfico de evolução</p>
+          </div>
+        </div>
       </div>
-      <div class="grid g2" style="margin-top:8px">
-        <label class="field">Logotipo (imagem)<input type="file" accept="image/*" onchange="carregarLogo(event)"></label>
-        <div style="display:flex;align-items:center;gap:10px">
-          <img id="cl_logo_prev" style="max-height:60px;display:none;border:1px solid var(--borda);border-radius:6px;padding:4px">
-          <button class="del" id="cl_logo_rm" style="display:none" onclick="removerLogo()">Remover logo</button>
+
+      <div class="ficha-phone">
+        <div class="ficha-phone-frame">
+          <div class="ficha-phone-notch"><div class="ficha-phone-notch-inner"></div></div>
+          <div class="ficha-screen">
+            <div class="ficha-screen-header">
+              <div class="ficha-screen-header-icon">📋</div>
+              <div class="ficha-screen-header-text">Ficha do Paciente</div>
+            </div>
+            <div class="ficha-screen-tabs">
+              <div class="fs-tab active">Ident.</div>
+              <div class="fs-tab">Dor</div>
+              <div class="fs-tab">Articular</div>
+              <div class="fs-tab">Escalas</div>
+            </div>
+            <div class="ficha-screen-body">
+
+              <!-- PANEL 1: Identificação -->
+              <div id="panel-ident" class="ficha-panel">
+                <div class="fs-section-title">1. Identificação do Paciente</div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Nome completo</div>
+                  <div class="fs-field-val">Maria Aparecida S.</div>
+                </div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Data de nascimento</div>
+                  <div class="fs-field-val">12/03/1978 · 48 anos</div>
+                </div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Diagnóstico clínico</div>
+                  <div class="fs-field-val">Lombalgia crônica inespecífica</div>
+                </div>
+                <div class="fs-section-title">2. Anamnese</div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Queixa principal</div>
+                  <div class="fs-field-val">"Dor nas costas há 3 meses, piora ao sentar"</div>
+                </div>
+                <div class="fs-check ok">✅ Bandeiras vermelhas — sem alertas</div>
+              </div>
+
+              <!-- PANEL 2: Dor & Inspeção -->
+              <div id="panel-dor" class="ficha-panel" style="display:none">
+                <div class="fs-section-title">Avaliação da Dor — EVA/END</div>
+                <div class="fs-eva">
+                  <div class="fs-eva-label">Intensidade atual: 3/10</div>
+                  <div class="fs-eva-bar"><div class="fs-eva-marker"></div></div>
+                </div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Tipo de dor</div>
+                  <div class="fs-field-val">Constante · profunda · em queimação</div>
+                </div>
+                <div class="fs-section-title">Inspeção Postural</div>
+                <div class="fs-check ok">✓ Hipercifose torácica</div>
+                <div class="fs-check ok">✓ Anteriorização da cabeça</div>
+                <div class="fs-check ok">✓ Hiperlordose lombar</div>
+                <div class="fs-section-title">Palpação</div>
+                <div class="fs-check ok">✓ Tensão paravertebrais lombares</div>
+                <div class="fs-check ok">✓ Ponto gatilho L3-L4</div>
+              </div>
+
+              <!-- PANEL 3: Avaliação Articular -->
+              <div id="panel-articular" class="ficha-panel" style="display:none">
+                <div class="fs-section-title">Amplitude de Movimento</div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Flexão lombar</div><div class="fs-adm-ref">Ref: 80°</div></div>
+                  <div class="fs-adm-val">60°</div>
+                </div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Extensão lombar</div><div class="fs-adm-ref">Ref: 25°</div></div>
+                  <div class="fs-adm-val">20°</div>
+                </div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Inclinação lateral D</div><div class="fs-adm-ref">Ref: 35°</div></div>
+                  <div class="fs-adm-val">28°</div>
+                </div>
+                <div class="fs-section-title">Força Muscular — MRC</div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Core / estabilizadores</div></div>
+                  <div class="fs-adm-val">4/5</div>
+                </div>
+                <div class="fs-section-title">Testes Especiais</div>
+                <div class="fs-check warn">✗ Slump Test — Positivo</div>
+                <div class="fs-check ok">✓ FABER — Negativo</div>
+                <div class="fs-check ok">✓ Lasègue — Negativo</div>
+              </div>
+
+              <!-- PANEL 4: Escalas Validadas -->
+              <div id="panel-escalas" class="ficha-panel" style="display:none">
+                <div class="fs-section-title">ODI — Índice de Oswestry</div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Pontuação total</div>
+                  <div class="fs-field-val">28/50 pontos</div>
+                </div>
+                <span class="fs-badge">Incapacidade moderada</span>
+                <div class="fs-section-title">Roland-Morris</div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Pontuação</div>
+                  <div class="fs-field-val">12/24</div>
+                </div>
+                <div class="fs-bar-wrap">
+                  <div class="fs-bar-track"><div class="fs-bar-fill" style="width:50%"></div></div>
+                </div>
+                <div class="fs-section-title">PSFS — Funcionalidade</div>
+                <div class="fs-field">
+                  <div class="fs-field-label">Média das atividades</div>
+                  <div class="fs-field-val">5/10 · melhora documentada</div>
+                </div>
+              </div>
+
+              <!-- PANEL 5: Neurofuncional -->
+              <div id="panel-neuro" class="ficha-panel" style="display:none">
+                <div class="fs-section-title">Escala de Ashworth Modificada</div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Membros superiores</div></div>
+                  <div class="fs-adm-val">Grau 0</div>
+                </div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Membros inferiores</div></div>
+                  <div class="fs-adm-val">Grau 1</div>
+                </div>
+                <div class="fs-section-title">Reflexos Osteotendinosos</div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Patelar (L4)</div></div>
+                  <div class="fs-adm-val">++</div>
+                </div>
+                <div class="fs-adm">
+                  <div><div class="fs-adm-label">Aquileu (S1)</div></div>
+                  <div class="fs-adm-val">++</div>
+                </div>
+                <div class="fs-section-title">Sensibilidade & Marcha</div>
+                <div class="fs-check ok">✓ Tátil — preservada</div>
+                <div class="fs-check ok">✓ Dolorosa — preservada</div>
+                <div class="fs-check warn">→ Marcha antálgica</div>
+              </div>
+
+              <!-- PANEL 6: Diagnóstico & Evolução -->
+              <div id="panel-diag" class="ficha-panel" style="display:none">
+                <div class="fs-section-title">Diagnóstico Fisioterapêutico</div>
+                <div class="fs-field">
+                  <div class="fs-field-val">Disfunção lombar com déficit de estabilidade e controle motor</div>
+                </div>
+                <div class="fs-section-title">Metas Funcionais</div>
+                <div class="fs-check ok">→ Reduzir dor para ≤2/10 em 4 semanas</div>
+                <div class="fs-check ok">→ Retornar ao trabalho sem limitações</div>
+                <div class="fs-section-title">Evolução da Dor (EVA)</div>
+                <div class="fs-mini-chart">
+                  <div class="fs-bar-col">
+                    <div class="fs-bar-block" style="height:42px;background:#ef4444"></div>
+                    <div class="fs-bar-lbl">Ini. 7</div>
+                  </div>
+                  <div class="fs-bar-col">
+                    <div class="fs-bar-block" style="height:30px;background:#eab308"></div>
+                    <div class="fs-bar-lbl">5ª 5</div>
+                  </div>
+                  <div class="fs-bar-col">
+                    <div class="fs-bar-block" style="height:18px;background:#22c55e"></div>
+                    <div class="fs-bar-lbl">10ª 3</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="card">
-      <h2>1. Identificação do Paciente</h2>
-      <div class="grid g3">
-        <label class="field">Nome completo<input data-k="id_nome"></label>
-        <label class="field">Data de nascimento<input type="date" data-k="id_nasc"></label>
-        <label class="field">Idade<input data-k="id_idade" type="number"></label>
-        <label class="field">Sexo<select data-k="id_sexo"><option value="">—</option><option>Feminino</option><option>Masculino</option><option>Outro</option></select></label>
-        <label class="field">Profissão<input data-k="id_prof"></label>
-        <label class="field">Telefone / contato<input data-k="id_tel"></label>
-        <label class="field">Nº prontuário<input data-k="id_pront"></label>
-        <label class="field">Data da avaliação<input type="date" data-k="id_data"></label>
-        <label class="field">Fisioterapeuta (nome / CREFITO)<input data-k="id_fisio"></label>
-      </div>
-      <div class="grid g2" style="margin-top:10px">
-        <label class="field">Diagnóstico clínico / médico<input data-k="id_diag"></label>
-        <label class="field">Médico responsável<input data-k="id_med"></label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>2. Anamnese</h2>
-      <label class="field">Queixa principal (QP) <span class="hint">o motivo nas palavras do paciente</span>
-        <textarea data-k="an_qp"></textarea></label>
-      <label class="field" style="margin-top:10px">História da moléstia atual (HMA) <span class="hint">início, mecanismo de lesão, evolução, fatores de melhora/piora, tratamentos prévios</span>
-        <textarea data-k="an_hma"></textarea></label>
-      <div class="grid g2" style="margin-top:10px">
-        <label class="field">História patológica pregressa (HPP)<textarea data-k="an_hpp"></textarea></label>
-        <label class="field">Cirurgias / internações<textarea data-k="an_cirurg"></textarea></label>
-        <label class="field">Medicações em uso<textarea data-k="an_med"></textarea></label>
-        <label class="field">Comorbidades (HAS, DM, cardiopatia, etc.)<textarea data-k="an_comorb"></textarea></label>
-        <label class="field">Exames complementares (RX, RM, USG, EMG)<textarea data-k="an_exames"></textarea></label>
-        <label class="field">Hábitos de vida / atividade física / ocupação<textarea data-k="an_habitos"></textarea></label>
-      </div>
-      <div class="grid g3" style="margin-top:10px">
-        <label class="field">Lado dominante<select data-k="an_dom"><option value="">—</option><option>Destro</option><option>Canhoto</option><option>Ambidestro</option></select></label>
-        <label class="field">Tabagismo<select data-k="an_tab"><option value="">—</option><option>Não</option><option>Ex-tabagista</option><option>Sim</option></select></label>
-        <label class="field">Etilismo<select data-k="an_etil"><option value="">—</option><option>Não</option><option>Social</option><option>Sim</option></select></label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>3. Triagem de Bandeiras Vermelhas (Red Flags)</h2>
-      <div class="legend">Sinais que sugerem patologia grave e necessidade de encaminhamento médico. Marque os presentes.</div>
-      <div class="grid g2" id="redflags"></div>
-      <label class="field" style="margin-top:10px">Observações / conduta<textarea data-k="rf_obs"></textarea></label>
-    </div>
-  </section>
-
-  <!-- 2. DOR & INSPEÇÃO -->
-  <section class="tab" data-tab="Dor & Inspeção">
-    <div class="card">
-      <h2>4. Avaliação da Dor</h2>
-      <div class="grid g2">
-        <label class="field">Localização da dor<input data-k="dor_local"></label>
-        <label class="field">Irradiação<input data-k="dor_irrad"></label>
-        <label class="field">Tipo (queimação, pontada, peso, fisgada…)<input data-k="dor_tipo"></label>
-        <label class="field">Período de maior intensidade<input data-k="dor_periodo"></label>
-        <label class="field">Fatores de melhora<input data-k="dor_melhora"></label>
-        <label class="field">Fatores de piora<input data-k="dor_piora"></label>
-      </div>
-      <h3>Escala Visual Analógica / Numérica da Dor (EVA / END) — 0 a 10</h3>
-      <div class="grid g3">
-        <label class="field">Dor em repouso
-          <input type="range" min="0" max="10" value="0" data-k="eva_repouso" oninput="this.nextElementSibling.textContent=this.value+'/10'">
-          <span class="scale-score" style="padding:3px 10px">0/10</span></label>
-        <label class="field">Dor em movimento
-          <input type="range" min="0" max="10" value="0" data-k="eva_mov" oninput="this.nextElementSibling.textContent=this.value+'/10'">
-          <span class="scale-score" style="padding:3px 10px">0/10</span></label>
-        <label class="field">Pior dor (24h)
-          <input type="range" min="0" max="10" value="0" data-k="eva_pior" oninput="this.nextElementSibling.textContent=this.value+'/10'">
-          <span class="scale-score" style="padding:3px 10px">0/10</span></label>
-      </div>
-      <div class="ref">EVA/END: ≥4 dor moderada; ≥7 dor intensa. Diferença mínima clinicamente importante (MCID) ≈ 2 pontos. Referência: Boonstra et al., 2008.</div>
-    </div>
-
-    <div class="card">
-      <h2>Mapa Corporal da Dor</h2>
-      <div class="legend no-print">Clique no corpo para marcar a dor. Cada clique adiciona um ponto (intensidade 1). Clique sobre um ponto para aumentar a intensidade (até 10) e, ao passar de 10, removê-lo. A cor indica a intensidade.</div>
-      <div class="bodymaps">
-        <div>
-          <div class="bm-title">Vista anterior</div>
-          <div class="bodymap" id="bm_ant" onclick="addPonto(event)"></div>
-        </div>
-        <div>
-          <div class="bm-title">Vista posterior</div>
-          <div class="bodymap" id="bm_post" onclick="addPonto(event)"></div>
-        </div>
-        <div class="bm-legend">
-          <b>Intensidade da dor</b>
-          <div class="bm-gradient"></div>
-          <div style="display:flex;justify-content:space-between"><span>1 leve</span><span>5</span><span>10 intensa</span></div>
-          <p>Total de pontos marcados: <b id="painCount">0</b></p>
-          <button class="del no-print" onclick="limparMapaDor()">Limpar mapa</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>5. Inspeção e Palpação</h2>
-      <div class="grid g2">
-        <label class="field">Inspeção estática (postura, deformidades, atrofias, edema, equimose)<textarea data-k="insp_estatica"></textarea></label>
-        <label class="field">Inspeção dinâmica (marcha, padrões de movimento)<textarea data-k="insp_dinamica"></textarea></label>
-        <label class="field">Pele / cicatrizes / trofismo<textarea data-k="insp_pele"></textarea></label>
-        <label class="field">Palpação (pontos dolorosos, temperatura, tônus, crepitação)<textarea data-k="palpacao"></textarea></label>
-      </div>
-      <h3>Avaliação Postural</h3>
-      <label class="field"><textarea data-k="postura" placeholder="Vista anterior, posterior e lateral: cabeça, ombros, coluna (cifose/lordose/escoliose), pelve, joelhos, pés…"></textarea></label>
-    </div>
-  </section>
-
-  <!-- 3. AVALIAÇÃO ARTICULAR -->
-  <section class="tab" data-tab="Avaliação Articular">
-    <div class="card">
-      <h2>6. Avaliação por Região — ADM, Força e Testes Especiais</h2>
-      <div class="legend">Selecione a(s) região(ões) avaliada(s). São exibidos os valores normais de ADM, a força muscular (escala MRC/Oxford 0–5) e os testes especiais validados de cada articulação, com o que avaliam e dados de acurácia quando disponíveis.</div>
-      <div class="region-btns" id="regionBtns"></div>
-      <div id="regionContent"></div>
-    </div>
-    <div class="card">
-      <h2>Escala de Força Muscular (MRC / Oxford)</h2>
-      <table>
-        <tr><th>Grau</th><th>Descrição</th></tr>
-        <tr><td><b>0</b></td><td>Nenhuma contração muscular</td></tr>
-        <tr><td><b>1</b></td><td>Contração palpável/visível, sem movimento</td></tr>
-        <tr><td><b>2</b></td><td>Movimento completo na ausência de gravidade</td></tr>
-        <tr><td><b>3</b></td><td>Movimento completo contra a gravidade</td></tr>
-        <tr><td><b>4</b></td><td>Movimento contra gravidade + resistência moderada</td></tr>
-        <tr><td><b>5</b></td><td>Força normal (contra resistência máxima)</td></tr>
-      </table>
-      <div class="ref">Medical Research Council (MRC) scale. Pode-se usar 4-/4/4+ para graduação intermediária.</div>
-    </div>
-  </section>
-
-  <!-- EXAME DE IMAGEM -->
-  <section class="tab" data-tab="Exame de Imagem">
-    <div class="card">
-      <h2>Exames de Imagem e Complementares</h2>
-      <div class="legend">Registre RX, ultrassonografia, tomografia, ressonância, densitometria, EMG, etc. — tipo, data, região, achados e laudo/conclusão. Use "Novo exame" para adicionar quantos forem necessários.</div>
-      <button onclick="addImagem()">➕ Novo exame</button>
-      <div id="imagens" style="margin-top:14px"></div>
-    </div>
-    <div class="card">
-      <h2>Correlação clínico-funcional dos achados</h2>
-      <label class="field"><textarea data-k="img_correlacao" placeholder="Relação entre os achados de imagem e o quadro clínico-funcional; achados relevantes para o plano de tratamento; sinais de alerta (red flags)."></textarea></label>
-    </div>
-  </section>
-
-  <!-- 4. ESCALAS VALIDADAS -->
-  <section class="tab" data-tab="Escalas Validadas">
-    <div class="card">
-      <h2>7. Escalas e Questionários Validados</h2>
-      <div class="legend">Selecione as escalas pertinentes ao caso. A pontuação e a interpretação são calculadas automaticamente. Aplicar na avaliação inicial e reavaliar periodicamente para medir desfecho.</div>
-      <div class="region-btns" id="scaleBtns"></div>
-      <div id="scaleContent"></div>
-    </div>
-  </section>
-
-  <!-- 5. NEUROFUNCIONAL -->
-  <section class="tab" data-tab="Neurofuncional">
-    <div class="card">
-      <h2>8. Avaliação Neurofuncional</h2>
-      <div class="grid g2">
-        <label class="field">Nível de consciência / orientação<input data-k="nf_consc"></label>
-        <label class="field">Comunicação / linguagem<input data-k="nf_comunic"></label>
-      </div>
-      <h3>Tônus muscular — Escala de Ashworth Modificada</h3>
-      <div class="legend">0 = tônus normal · 1 = leve aumento (resistência mínima no fim da ADM) · 1+ = leve aumento em menos de ½ da ADM · 2 = aumento mais marcado em quase toda ADM, mobilização fácil · 3 = aumento considerável, mobilização difícil · 4 = parte rígida em flexão/extensão.</div>
-      <div class="grid g2">
-        <label class="field">Segmento / músculo avaliado<input data-k="nf_ashworth_seg"></label>
-        <label class="field">Grau Ashworth<select data-k="nf_ashworth"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></label>
-      </div>
-      <h3>Reflexos, Sensibilidade e Coordenação</h3>
-      <div class="grid g2">
-        <label class="field">Reflexos profundos (ROT: bicipital, tricipital, patelar, aquileu)<textarea data-k="nf_rot"></textarea></label>
-        <label class="field">Reflexos patológicos (Babinski, clônus, Hoffmann)<textarea data-k="nf_patol"></textarea></label>
-        <label class="field">Sensibilidade superficial (tátil, térmica, dolorosa)<textarea data-k="nf_sens_sup"></textarea></label>
-        <label class="field">Sensibilidade profunda (proprioceptiva, vibratória, cinestésica)<textarea data-k="nf_sens_prof"></textarea></label>
-        <label class="field">Coordenação (index-nariz, calcanhar-joelho, diadococinesia)<textarea data-k="nf_coord"></textarea></label>
-        <label class="field">Equilíbrio (Romberg, estático/dinâmico)<textarea data-k="nf_equilibrio"></textarea></label>
-      </div>
-      <h3>Avaliação da Marcha</h3>
-      <label class="field"><textarea data-k="nf_marcha" placeholder="Padrão de marcha, fase de apoio/balanço, base de suporte, comprimento de passo, uso de dispositivo auxiliar, desvios (marcha ceifante, escarvante, anserina, parkinsoniana…)"></textarea></label>
-      <div class="ref">Para escalas de equilíbrio/marcha quantitativas (Berg, Tinetti, TUG, Dynamic Gait Index) veja a aba "Escalas Validadas".</div>
-    </div>
-  </section>
-
-  <!-- 6. GERONTOLÓGICA -->
-  <section class="tab" data-tab="Gerontológica">
-    <div class="card">
-      <h2>9. Avaliação Gerontológica / Funcional</h2>
-      <div class="grid g2">
-        <label class="field">Histórico de quedas (nº nos últimos 12 meses)<input type="number" data-k="ger_quedas"></label>
-        <label class="field">Medo de cair<select data-k="ger_medo"><option value="">—</option><option>Não</option><option>Sim</option></select></label>
-        <label class="field">Uso de dispositivo auxiliar<input data-k="ger_disp"></label>
-        <label class="field">Polifarmácia (≥5 medicamentos)<select data-k="ger_polifarm"><option value="">—</option><option>Não</option><option>Sim</option></select></label>
-      </div>
-      <h3>Força de Preensão / Sarcopenia (rastreio)</h3>
-      <div class="grid g3">
-        <label class="field">Dinamometria preensão (kgf)<input type="number" data-k="ger_dinamo"></label>
-        <label class="field">Velocidade da marcha (m/s)<input type="number" step="0.01" data-k="ger_veloc"><span class="hint">&lt;0,8 m/s = risco</span></label>
-        <label class="field">Circunferência da panturrilha (cm)<input type="number" data-k="ger_pant"><span class="hint">&lt;31 cm = risco sarcopenia</span></label>
-      </div>
-      <div class="ref">Rastreio de sarcopenia: SARC-F, força de preensão (EWGSOP2). Avaliação de risco de queda quantitativa: Berg, Tinetti, TUG, apoio unipodal — disponíveis na aba "Escalas Validadas".</div>
-      <h3>Cognição e Humor (rastreio)</h3>
-      <div class="grid g2">
-        <label class="field">Rastreio cognitivo (MEEM / MoCA — pontuação)<input data-k="ger_cog"></label>
-        <label class="field">Rastreio de humor (GDS / observação)<input data-k="ger_humor"></label>
-      </div>
-      <label class="field" style="margin-top:10px">Observações funcionais / AVDs / contexto domiciliar e social<textarea data-k="ger_obs"></textarea></label>
-    </div>
-  </section>
-
-  <!-- 7. DIAGNÓSTICO E PLANO -->
-  <section class="tab" data-tab="Diagnóstico & Plano">
-    <div class="card">
-      <h2>10. Diagnóstico Cinético-Funcional e Plano de Tratamento</h2>
-      <label class="field">Diagnóstico cinético-funcional fisioterapêutico<textarea data-k="dx_funcional"></textarea></label>
-      <h3>Estrutura segundo a CIF (opcional)</h3>
-      <div class="grid g2">
-        <label class="field">Deficiências de estrutura e função<textarea data-k="cif_func"></textarea></label>
-        <label class="field">Limitações de atividade e restrições de participação<textarea data-k="cif_ativ"></textarea></label>
-        <label class="field">Fatores ambientais<textarea data-k="cif_amb"></textarea></label>
-        <label class="field">Fatores pessoais<textarea data-k="cif_pess"></textarea></label>
-      </div>
-      <h3>Objetivos</h3>
-      <div class="grid g2">
-        <label class="field">Objetivos a curto prazo<textarea data-k="obj_curto"></textarea></label>
-        <label class="field">Objetivos a médio/longo prazo<textarea data-k="obj_longo"></textarea></label>
-      </div>
-      <h3>Conduta / Plano Terapêutico (baseado em evidência)</h3>
-      <label class="field"><textarea data-k="conduta" placeholder="Recursos e técnicas (cinesioterapia, terapia manual, exercício terapêutico/resistido, educação em dor, eletrotermofototerapia, treino funcional…), frequência semanal, prognóstico."></textarea></label>
-      <div class="grid g2" style="margin-top:8px">
-        <label class="field">Frequência semanal<input data-k="plano_freq"></label>
-        <label class="field">Prognóstico<select data-k="plano_prog"><option value="">—</option><option>Bom</option><option>Reservado</option><option>Desfavorável</option></select></label>
-      </div>
-    </div>
-  </section>
-
-  <!-- 8. EVOLUÇÃO -->
-  <section class="tab" data-tab="Evolução">
-    <div class="card">
-      <h2>11. Ficha de Evolução / Acompanhamento</h2>
-      <div class="legend">Registre cada atendimento. Acompanhe objetivamente a evolução pela EVA, ADM e reaplicação das escalas. Compare com a MCID de cada instrumento.</div>
-      <button onclick="addSessao()">➕ Nova sessão</button>
-      <div id="sessoes" style="margin-top:14px"></div>
-    </div>
-    <div class="card">
-      <h2>Gráfico de Evolução da Dor (EVA)</h2>
-      <div class="legend">Linha da EVA registrada em cada sessão. A faixa sombreada representa a MCID (≈ 2 pontos) a partir da dor inicial: variação dentro dela pode não ser clinicamente relevante. Preencha o campo EVA nas sessões para alimentar o gráfico.</div>
-      <div id="grafico"></div>
-      <div id="mcidResumo" style="margin-top:10px"></div>
-    </div>
-    <div class="card">
-      <h2>Quadro Comparativo de Reavaliação</h2>
-      <table>
-        <tr><th>Parâmetro</th><th>Avaliação inicial</th><th>Reavaliação 1</th><th>Reavaliação 2</th><th>Alta</th></tr>
-        <tr><td>Data</td><td><input data-k="cmp_data_0"></td><td><input data-k="cmp_data_1"></td><td><input data-k="cmp_data_2"></td><td><input data-k="cmp_data_3"></td></tr>
-        <tr><td>EVA (0–10)</td><td><input data-k="cmp_eva_0"></td><td><input data-k="cmp_eva_1"></td><td><input data-k="cmp_eva_2"></td><td><input data-k="cmp_eva_3"></td></tr>
-        <tr><td>ADM principal</td><td><input data-k="cmp_adm_0"></td><td><input data-k="cmp_adm_1"></td><td><input data-k="cmp_adm_2"></td><td><input data-k="cmp_adm_3"></td></tr>
-        <tr><td>Força (MRC)</td><td><input data-k="cmp_forca_0"></td><td><input data-k="cmp_forca_1"></td><td><input data-k="cmp_forca_2"></td><td><input data-k="cmp_forca_3"></td></tr>
-        <tr><td>Escala funcional (nome/score)</td><td><input data-k="cmp_esc_0"></td><td><input data-k="cmp_esc_1"></td><td><input data-k="cmp_esc_2"></td><td><input data-k="cmp_esc_3"></td></tr>
-      </table>
-    </div>
-  </section>
-
-  <div class="print-only print-sign" id="printSign">
-    <div class="line"></div>
-    <div id="phAssinatura"></div>
-    <div style="font-size:10px;color:#555">Assinatura e carimbo do fisioterapeuta responsável</div>
   </div>
+</section>
 
-  <!-- AGENDA (módulo da clínica) -->
-  <section id="viewAgenda" class="modeview" style="display:none">
-    <div class="card">
-      <div class="mod-head">
-        <div><h2 style="margin:0">📅 Agenda</h2><div class="ref" id="agResumo"></div></div>
-        <button onclick="openAgendaForm(null)">➕ Novo agendamento</button>
+<!-- PWA — COMO INSTALAR -->
+<section class="pwa-section">
+  <div class="pwa-inner">
+    <div class="section-label">No seu celular</div>
+    <h2>Adicione à tela inicial como um app</h2>
+    <p class="section-sub">Sem baixar nada da loja. Funciona no iPhone e no Android.</p>
+
+    <div class="pwa-steps">
+      <div class="pwa-device">
+        <div class="pwa-device-title">
+          <div class="pwa-device-icon">🍎</div>
+          iPhone (Safari)
+        </div>
+        <div class="pwa-step-list">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <p>Abra o app no <strong>Safari</strong> — não funciona pelo Chrome no iPhone</p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <p>Toque no ícone de <strong>compartilhar</strong> (quadrado com seta para cima) na barra inferior</p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <p>Role a lista e toque em <strong>"Adicionar à Tela de Início"</strong></p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">4</div>
+            <p>Confirme o nome e toque em <strong>"Adicionar"</strong> — pronto!</p>
+          </div>
+        </div>
       </div>
-      <div id="agWeek" class="ag-week"></div>
-      <div id="agLista"></div>
+
+      <div class="pwa-device">
+        <div class="pwa-device-title">
+          <div class="pwa-device-icon">🤖</div>
+          Android (Chrome)
+        </div>
+        <div class="pwa-step-list">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <p>Abra o app no <strong>Chrome</strong></p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <p>Toque nos <strong>três pontos</strong> (⋮) no canto superior direito</p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <p>Selecione <strong>"Adicionar à tela inicial"</strong> ou <strong>"Instalar app"</strong></p>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">4</div>
+            <p>Confirme e o ícone aparece na sua tela — funciona como app nativo</p>
+          </div>
+        </div>
+      </div>
     </div>
-  </section>
 
-  <!-- FINANCEIRO (módulo da clínica) -->
-  <section id="viewFinanceiro" class="modeview" style="display:none">
-    <div class="card">
-      <div class="mod-head">
-        <div><h2 style="margin:0">💰 Financeiro</h2><div class="ref">Pagamentos e fluxo de caixa</div></div>
-        <button onclick="openFinForm(null)">➕ Novo lançamento</button>
-      </div>
-      <div class="fin-monthnav">
-        <button onclick="mudarMesFin(-1)" aria-label="Mês anterior">‹</button>
-        <span id="finMesLabel"></span>
-        <button onclick="mudarMesFin(1)" aria-label="Próximo mês">›</button>
-      </div>
-      <div class="fin-cards" id="finResumo"></div>
-      <div id="finChart"></div>
-      <div id="finLista"></div>
+    <div class="pwa-note">
+      💡 Depois de instalado, o app abre em tela cheia sem a barra do navegador — igual a um app da loja.
     </div>
-  </section>
-
-  <div class="card no-print" style="text-align:center;font-size:11.5px;color:var(--cinza)">
-    Ferramenta de apoio à decisão clínica. Não substitui o julgamento profissional. Os dados são salvos apenas neste navegador (armazenamento local).
-    <br><a onclick="cancelarAssinatura()" style="color:var(--azul2);cursor:pointer;text-decoration:underline">Cancelar assinatura</a>
   </div>
-</main>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="how" id="como-funciona">
+  <div class="how-inner">
+    <div class="section-label">Simples assim</div>
+    <h2>Como funciona</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Assine o plano</h3>
+        <p>Escolha mensal ou anual e pague via Pix, boleto ou cartão. Acesso imediato.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Configure sua senha</h3>
+        <p>Você recebe um e-mail com o link de acesso. Crie sua senha e entre no app.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Comece a avaliar</h3>
+        <p>Preencha suas fichas de avaliação direto no celular. Simples e imediato.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="planos">
+  <div class="section-label">Planos</div>
+  <h2>Preço simples e justo</h2>
+  <p class="section-sub">Sem taxa de adesão, sem contrato longo. Cancele quando quiser.</p>
+
+  <div class="pricing-grid">
+    <!-- MENSAL -->
+    <div class="plan">
+      <div class="plan-name">Mensal</div>
+      <div class="plan-price">
+        <span class="price-currency">R$</span>
+        <span class="price-value">9,90</span>
+        <span class="price-period">/mês</span>
+      </div>
+      <p class="plan-detail">Cobrado mensalmente</p>
+      <ul class="plan-features">
+        <li>Ficha de avaliação completa</li>
+        <li>Acesso pelo celular e computador</li>
+        <li>Dados seguros na nuvem</li>
+        <li>Suporte por e-mail</li>
+      </ul>
+      <a href="https://mpago.la/2gY6WqW" class="btn-plan btn-plan-outline" id="btn-mensal" target="_blank">Assinar mensal</a>
+    </div>
+
+    <!-- ANUAL -->
+    <div class="plan plan-popular">
+      <div class="badge-popular">🏆 Mais econômico</div>
+      <div class="plan-name">Anual</div>
+      <div class="plan-price">
+        <span class="price-currency">R$</span>
+        <span class="price-value">89,90</span>
+        <span class="price-period">/ano</span>
+      </div>
+      <p class="plan-detail">Equivale a R$&nbsp;7,49/mês — 2&nbsp;meses grátis</p>
+      <ul class="plan-features">
+        <li>Ficha de avaliação completa</li>
+        <li>Acesso pelo celular e computador</li>
+        <li>Dados seguros na nuvem</li>
+        <li>Suporte por e-mail</li>
+      </ul>
+      <a href="https://mpago.la/2nEDg3c" class="btn-plan btn-plan-filled" id="btn-anual" target="_blank">Assinar anual</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="faq-inner">
+    <div class="section-label">Dúvidas</div>
+    <h2>Perguntas frequentes</h2>
+
+    <div class="faq-list">
+      <details>
+        <summary>Como acesso o app após assinar?</summary>
+        <p>Assim que o pagamento for confirmado, você recebe um e-mail com um link para criar sua senha. Depois é só entrar com seu e-mail e senha no app.</p>
+      </details>
+      <details>
+        <summary>Funciona no iPhone e Android?</summary>
+        <p>Sim. O Ficha Fisio é um app web progressivo (PWA) — funciona em qualquer navegador moderno no celular ou computador. Você pode até adicionar na tela inicial como se fosse um app nativo.</p>
+      </details>
+      <details>
+        <summary>Posso cancelar a qualquer momento?</summary>
+        <p>Sim. No plano mensal, basta não renovar. No anual, o acesso fica ativo até o fim do período contratado.</p>
+      </details>
+      <details>
+        <summary>Meus dados ficam salvos se eu cancelar?</summary>
+        <p>Seus dados ficam armazenados com segurança na nuvem enquanto sua assinatura estiver ativa. Recomendamos exportar suas fichas antes de cancelar.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <h2>Comece hoje mesmo</h2>
+  <p>Seu primeiro mês de acesso completo por apenas R$&nbsp;9,90.</p>
+  <a href="#planos" class="btn-hero-primary">Ver planos</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/app/" target="_blank">Acessar o app</a>
+    <a href="mailto:contato@fichafisio.com.br">Contato</a>
+  </div>
+  <p>© 2025 Ficha Fisio. Todos os direitos reservados.</p>
+</footer>
 
 <script>
-/* ====================== BANCO DE DADOS CLÍNICO ====================== */
-
-const RED_FLAGS = [
-  "Dor noturna intensa, constante e progressiva",
-  "Perda de peso inexplicada",
-  "Febre / mal-estar sistêmico",
-  "História de câncer",
-  "Trauma significativo / suspeita de fratura",
-  "Déficit neurológico progressivo",
-  "Síndrome da cauda equina (anestesia em sela, retenção/incontinência)",
-  "Uso prolongado de corticoide / osteoporose",
-  "Dor torácica, dispneia ou sinais cardiovasculares",
-  "Sintomas de insuficiência vértebro-basilar (5D's e 3N's)"
-];
-
-// Regiões: ADM normal, músculos para força, testes especiais
-const REGIOES = {
-  "Ombro": {
-    adm: [["Flexão","0–180°"],["Extensão","0–60°"],["Abdução","0–180°"],["Adução","0–45°"],["Rotação externa","0–90°"],["Rotação interna","0–70°"]],
-    forca: ["Deltoide","Supraespinhal","Infraespinhal/Redondo menor","Subescapular","Peitoral maior","Bíceps","Tríceps","Trapézio","Serrátil anterior"],
-    testes: [
-      ["Neer","Impacto subacromial","Sens ~79% / Esp ~53%"],
-      ["Hawkins-Kennedy","Impacto subacromial","Sens ~79% / Esp ~59%"],
-      ["Jobe (Empty Can)","Lesão do supraespinhal","Sens ~88% / Esp ~62%"],
-      ["Patte","Infraespinhal / redondo menor",""],
-      ["Gerber (Lift-off)","Subescapular","Esp ~92%"],
-      ["Belly press","Subescapular",""],
-      ["Speed","Tendão do bíceps / SLAP","Sens ~32% / Esp ~75%"],
-      ["Yergason","Tendão do bíceps / instab. bicipital",""],
-      ["O'Brien (Active compression)","Lesão SLAP / articulação AC","Sens ~67% / Esp ~37%"],
-      ["Apreensão + Recolocação (Jobe)","Instabilidade anterior","Esp ~96% (relocation)"],
-      ["Sulcus sign","Instabilidade inferior / frouxidão",""],
-      ["Drop arm","Ruptura do manguito rotador","Esp ~88%"]
-    ]
-  },
-  "Cotovelo": {
-    adm: [["Flexão","0–150°"],["Extensão","0°"],["Pronação","0–80°"],["Supinação","0–80°"]],
-    forca: ["Bíceps","Tríceps","Braquiorradial","Extensores do punho","Flexores do punho"],
-    testes: [
-      ["Cozen","Epicondilite lateral (cotovelo de tenista)",""],
-      ["Mill","Epicondilite lateral",""],
-      ["Teste de Maudsley","Epicondilite lateral (3º dedo)",""],
-      ["Teste do golfista","Epicondilite medial",""],
-      ["Estresse em valgo","Lesão do ligamento colateral medial",""],
-      ["Estresse em varo","Lesão do ligamento colateral lateral",""],
-      ["Tinel (sulco ulnar)","Compressão do nervo ulnar",""],
-      ["Teste de flexão do cotovelo","Síndrome do túnel cubital",""]
-    ]
-  },
-  "Punho / Mão": {
-    adm: [["Flexão punho","0–80°"],["Extensão punho","0–70°"],["Desvio radial","0–20°"],["Desvio ulnar","0–30°"]],
-    forca: ["Flexores dos dedos","Extensores dos dedos","Interósseos","Tenar/oponente","Preensão (dinamômetro)"],
-    testes: [
-      ["Phalen","Síndrome do túnel do carpo","Sens ~68% / Esp ~73%"],
-      ["Tinel (carpo)","Síndrome do túnel do carpo","Sens ~50% / Esp ~77%"],
-      ["Finkelstein","Tenossinovite de De Quervain",""],
-      ["Watson (shift escafoide)","Instabilidade do escafoide",""],
-      ["Teste de Allen","Patência das artérias radial/ulnar",""],
-      ["Grind do polegar","Rizartrose (artrose CMC)",""]
-    ]
-  },
-  "Coluna Cervical": {
-    adm: [["Flexão","0–45°"],["Extensão","0–45°"],["Inclinação lateral","0–45°"],["Rotação","0–80°"]],
-    forca: ["Flexores profundos","Extensores cervicais","Trapézio superior","Esternocleidomastóideo","Miótomos MMSS (C5–T1)"],
-    testes: [
-      ["Spurling","Radiculopatia cervical","Sens ~30% / Esp ~93%"],
-      ["Distração cervical","Radiculopatia cervical (alívio)","Esp ~90%"],
-      ["Compressão cervical","Radiculopatia / dor facetária",""],
-      ["Teste de Valsalva","Aumento de pressão intratecal / hérnia",""],
-      ["Lhermitte","Acometimento medular",""],
-      ["ULTT / Tensão neural MMSS","Sensibilização neural / radiculopatia","Sens ~97%"],
-      ["Teste de flexão-rotação","Disfunção C1–C2 (cefaleia cervicogênica)",""],
-      ["Sharp-Purser","Instabilidade atlantoaxial",""]
-    ]
-  },
-  "Coluna Lombar / Pelve": {
-    adm: [["Flexão","0–60°"],["Extensão","0–25°"],["Inclinação lateral","0–25°"],["Rotação","0–30°"],["Schober","↑ ≥5 cm (mobilidade)"]],
-    forca: ["Eretores da espinha","Abdominais","Glúteo máximo","Miótomos MMII (L2–S1)"],
-    testes: [
-      ["Lasègue / SLR","Radiculopatia lombar (L4–S1)","Sens ~91% / Esp ~26%"],
-      ["Lasègue cruzado","Hérnia discal (alta especificidade)","Esp ~88%"],
-      ["Slump","Sensibilização neural / radiculopatia","Sens ~84% / Esp ~83%"],
-      ["Teste de elevação ativa da perna (ASLR)","Instabilidade da cintura pélvica",""],
-      ["FABER / Patrick","Disfunção sacroilíaca / quadril",""],
-      ["Compressão / Distração SI","Disfunção sacroilíaca",""],
-      ["Gaenslen","Disfunção sacroilíaca",""],
-      ["Thrust de coxa (Thigh thrust)","Disfunção sacroilíaca","Sens ~88%"],
-      ["Centralização (McKenzie)","Origem discal / preferência direcional",""],
-      ["Teste de instabilidade em prono","Instabilidade lombar segmentar",""]
-    ]
-  },
-  "Quadril": {
-    adm: [["Flexão","0–120°"],["Extensão","0–20°"],["Abdução","0–45°"],["Adução","0–30°"],["Rotação interna","0–45°"],["Rotação externa","0–45°"]],
-    forca: ["Iliopsoas (flexores)","Glúteo máximo","Glúteo médio (abdutores)","Adutores","Rotadores externos"],
-    testes: [
-      ["FADIR","Impacto femoroacetabular / lesão labral","Sens ~94% / Esp ~8%"],
-      ["FABER / Patrick","Patologia intra-articular / sacroilíaca",""],
-      ["Thomas","Encurtamento dos flexores do quadril",""],
-      ["Ober","Encurtamento do TFL / banda iliotibial",""],
-      ["Trendelenburg","Insuficiência do glúteo médio",""],
-      ["Log roll","Patologia intra-articular do quadril","alta especificidade"],
-      ["Scour (quadrante)","Patologia intra-articular / artrose",""],
-      ["Ortolani / Barlow","Displasia do quadril (lactente)",""]
-    ]
-  },
-  "Joelho": {
-    adm: [["Flexão","0–135°"],["Extensão","0°"]],
-    forca: ["Quadríceps","Isquiotibiais","Glúteos","Gastrocnêmio"],
-    testes: [
-      ["Lachman","Lesão do LCA","Sens ~85% / Esp ~94%"],
-      ["Gaveta anterior","Lesão do LCA","Sens ~55% / Esp ~92%"],
-      ["Pivot shift","Lesão do LCA (instab. rotatória)","Esp ~98%"],
-      ["Gaveta posterior","Lesão do LCP","Sens ~90% / Esp ~99%"],
-      ["McMurray","Lesão meniscal","Sens ~70% / Esp ~71%"],
-      ["Thessaly (20°)","Lesão meniscal","Sens ~89% / Esp ~97%"],
-      ["Apley (compressão)","Lesão meniscal",""],
-      ["Estresse em valgo (0°/30°)","Lesão do ligamento colateral medial",""],
-      ["Estresse em varo (0°/30°)","Lesão do ligamento colateral lateral",""],
-      ["Apreensão patelar","Instabilidade femoropatelar",""],
-      ["Clarke / Grind patelar","Síndrome femoropatelar / condromalácia",""]
-    ]
-  },
-  "Tornozelo / Pé": {
-    adm: [["Dorsiflexão","0–20°"],["Flexão plantar","0–50°"],["Inversão","0–35°"],["Eversão","0–15°"]],
-    forca: ["Tibial anterior","Tríceps sural (gastro-sóleo)","Fibulares","Tibial posterior"],
-    testes: [
-      ["Gaveta anterior do tornozelo","Lesão do lig. talofibular anterior (LTFA)","Sens ~78% / Esp ~75%"],
-      ["Estresse em inversão (Talar tilt)","Lesão do lig. calcaneofibular","Sens ~67%"],
-      ["Squeeze test","Lesão sindesmótica (entorse alta)",""],
-      ["Teste de rotação externa (Kleiger)","Lesão sindesmótica / deltoide",""],
-      ["Thompson","Ruptura do tendão de Aquiles","Sens ~96% / Esp ~93%"],
-      ["Windlass","Fascite plantar",""],
-      ["Tinel tarsal","Síndrome do túnel do tarso",""],
-      ["Regras de Ottawa","Rastreio de fratura (decisão de RX)","Sens ~98%"]
-    ]
-  }
+const _tabCfg = {
+  'panel-ident':     { tabs: ['Ident.','Dor','Articular','Escalas'], active: 0 },
+  'panel-dor':       { tabs: ['Ident.','Dor','Articular','Escalas'], active: 1 },
+  'panel-articular': { tabs: ['Ident.','Dor','Articular','Escalas'], active: 2 },
+  'panel-escalas':   { tabs: ['Ident.','Dor','Articular','Escalas'], active: 3 },
+  'panel-neuro':     { tabs: ['Articular','Escalas','Neuro','Diagnóst.'], active: 2 },
+  'panel-diag':      { tabs: ['Escalas','Neuro','Diagnóst.','Evolução'], active: 2 }
 };
-
-/* ====================== ESCALAS VALIDADAS ====================== */
-// opts: lista de {l:rótulo, v:valor}. Cada item usa o mesmo conjunto salvo defina próprio.
-const OPT5 = [{l:"0",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4",v:4},{l:"5",v:5}];
-
-const ESCALAS = {
-  "QuickDASH (membro superior)": {
-    ref:"DASH abreviado — 11 itens. Score = ((média respostas − 1) × 25). 0 = sem incapacidade, 100 = incapacidade máxima. MCID ≈ 8–18 pontos.",
-    itens:[
-      "Abrir um pote apertado","Realizar tarefas domésticas pesadas","Carregar uma sacola de compras",
-      "Lavar as costas","Usar uma faca para cortar alimentos","Atividades recreativas com impacto no braço",
-      "Limitação em atividades sociais por causa do braço","Limitação no trabalho/atividades diárias",
-      "Gravidade da dor no braço/ombro/mão","Formigamento no braço/ombro/mão","Dificuldade para dormir por causa da dor"
-    ],
-    opts:[{l:"1 - Sem dificuldade/nenhum",v:1},{l:"2 - Leve",v:2},{l:"3 - Moderada",v:3},{l:"4 - Grave",v:4},{l:"5 - Impossível/extrema",v:5}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<10) return null; return ((f.reduce((a,b)=>a+b,0)/f.length)-1)*25;},
-    interp:(s)=> s==null?"Responda ≥10 itens": s<15?["Incapacidade mínima","b-green"]: s<40?["Incapacidade leve a moderada","b-yellow"]:["Incapacidade importante","b-red"],
-    unidade:"/100"
-  },
-  "Índice de Incapacidade Oswestry (ODI) — lombar": {
-    ref:"10 seções × 0–5. Score % = (soma / (nº seções × 5)) × 100. MCID ≈ 10%.",
-    itens:["Intensidade da dor","Cuidados pessoais (lavar-se, vestir-se)","Levantar pesos","Caminhar","Sentar","Ficar em pé","Dormir","Vida sexual","Vida social","Viajar/locomover-se"],
-    opts:[{l:"0",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4",v:4},{l:"5",v:5}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return (f.reduce((a,b)=>a+b,0)/(f.length*5))*100;},
-    interp:(s)=> s==null?"Responda os itens": s<=20?["Incapacidade mínima","b-green"]: s<=40?["Incapacidade moderada","b-yellow"]: s<=60?["Incapacidade grave","b-red"]:["Incapacidade muito grave/inválido","b-red"],
-    unidade:"%"
-  },
-  "Índice de Incapacidade Cervical (NDI)": {
-    ref:"10 itens × 0–5. Score % = (soma / 50) × 100. MCID ≈ 7,5 pontos (≈ 15%).",
-    itens:["Intensidade da dor","Cuidados pessoais","Levantar pesos","Leitura","Cefaleia","Concentração","Trabalho","Dirigir","Dormir","Lazer"],
-    opts:[{l:"0",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4",v:4},{l:"5",v:5}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return (f.reduce((a,b)=>a+b,0)/(f.length*5))*100;},
-    interp:(s)=> s==null?"Responda os itens": s<=8?["Sem incapacidade","b-green"]: s<=28?["Incapacidade leve","b-yellow"]: s<=48?["Incapacidade moderada","b-yellow"]: s<=68?["Incapacidade grave","b-red"]:["Incapacidade completa","b-red"],
-    unidade:"%"
-  },
-  "Escala de Lysholm (joelho)": {
-    ref:"8 itens, total 0–100. Quanto maior, melhor a função. >90 excelente; 84–90 bom; 65–83 regular; <65 ruim.",
-    itens:[
-      "Mancar (claudicação)","Apoio (uso de bengala/muleta)","Travamento articular","Instabilidade/falseio",
-      "Dor","Edema","Subir escadas","Agachar"
-    ],
-    opts:[{l:"Pior (0)",v:0},{l:"Parcial",v:10},{l:"Bom",v:20},{l:"Normal (máx.)",v:25}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return Math.min(100,f.reduce((a,b)=>a+b,0));},
-    interp:(s)=> s==null?"Responda os itens": s>90?["Excelente","b-green"]: s>=84?["Bom","b-green"]: s>=65?["Regular","b-yellow"]:["Ruim","b-red"],
-    unidade:"/100"
-  },
-  "WOMAC (osteoartrite quadril/joelho)": {
-    ref:"24 itens (5 dor, 2 rigidez, 17 função) × 0–4. Total 0–96. Maior = pior. Reportar subescalas. MCID variável.",
-    itens:[
-      "DOR: caminhar","DOR: subir/descer escadas","DOR: à noite na cama","DOR: sentado/deitado","DOR: em pé",
-      "RIGIDEZ: ao acordar","RIGIDEZ: ao longo do dia",
-      "FUNÇÃO: descer escadas","FUNÇÃO: subir escadas","FUNÇÃO: levantar-se sentado","FUNÇÃO: ficar em pé",
-      "FUNÇÃO: curvar-se ao chão","FUNÇÃO: andar no plano","FUNÇÃO: entrar/sair do carro","FUNÇÃO: fazer compras",
-      "FUNÇÃO: calçar meias","FUNÇÃO: levantar da cama","FUNÇÃO: tirar meias","FUNÇÃO: deitar na cama",
-      "FUNÇÃO: entrar/sair do banho","FUNÇÃO: sentar","FUNÇÃO: usar o vaso sanitário","FUNÇÃO: tarefas domésticas pesadas","FUNÇÃO: tarefas domésticas leves"
-    ],
-    opts:[{l:"0 Nenhuma",v:0},{l:"1 Leve",v:1},{l:"2 Moderada",v:2},{l:"3 Intensa",v:3},{l:"4 Muito intensa",v:4}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os itens": s<25?["Comprometimento leve","b-green"]: s<50?["Moderado","b-yellow"]:["Grave","b-red"],
-    unidade:"/96"
-  },
-  "Escala de Equilíbrio de Berg": {
-    ref:"14 tarefas × 0–4. Total 0–56. ≤45 risco aumentado de quedas. MDC ≈ 4–7 pontos.",
-    itens:[
-      "Sentado para em pé","Em pé sem apoio","Sentado sem apoio","Em pé para sentado","Transferências",
-      "Em pé com olhos fechados","Em pé com pés juntos","Alcançar à frente com braço estendido","Pegar objeto do chão",
-      "Virar para olhar para trás","Girar 360°","Pisar alternado em degrau","Em pé com um pé à frente (tandem)","Apoio unipodal"
-    ],
-    opts:[{l:"0",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4",v:4}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda as 14 tarefas": s>=45?["Baixo risco de queda","b-green"]: s>=21?["Risco moderado","b-yellow"]:["Alto risco de queda","b-red"],
-    unidade:"/56"
-  },
-  "Tinetti (POMA) — equilíbrio e marcha": {
-    ref:"Equilíbrio (0–16) + Marcha (0–12) = 0–28. <19 alto risco de queda; 19–23 risco moderado.",
-    itens:[
-      "EQ: equilíbrio sentado","EQ: levantar da cadeira","EQ: tentativas de levantar","EQ: equilíbrio imediato em pé (5s)",
-      "EQ: equilíbrio em pé","EQ: teste do empurrão (esterno)","EQ: olhos fechados","EQ: girar 360°","EQ: sentar",
-      "MAR: início da marcha","MAR: comprimento e altura do passo","MAR: simetria do passo","MAR: continuidade do passo",
-      "MAR: trajetória","MAR: tronco","MAR: base de sustentação"
-    ],
-    opts:[{l:"0",v:0},{l:"1",v:1},{l:"2",v:2}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os itens": s>=24?["Baixo risco de queda","b-green"]: s>=19?["Risco moderado","b-yellow"]:["Alto risco de queda","b-red"],
-    unidade:"/28"
-  },
-  "Índice de Barthel (AVDs)": {
-    ref:"10 atividades. Total 0–100. Maior = mais independente. <60 dependência; 100 independência total.",
-    itens:["Alimentação","Banho","Higiene pessoal","Vestir-se","Controle intestinal","Controle vesical","Uso do banheiro","Transferência cama-cadeira","Mobilidade/deambulação","Subir escadas"],
-    opts:[{l:"0 Dependente",v:0},{l:"5 Ajuda parcial",v:5},{l:"10 Independente",v:10},{l:"15 Independente (deambulação)",v:15}],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return Math.min(100,f.reduce((a,b)=>a+b,0));},
-    interp:(s)=> s==null?"Responda os itens": s>=100?["Independência total","b-green"]: s>=60?["Dependência leve","b-yellow"]: s>=40?["Dependência moderada","b-yellow"]:["Dependência grave/total","b-red"],
-    unidade:"/100"
-  },
-  "SPADI (ombro)": {
-    ref:"Shoulder Pain and Disability Index — 13 itens (5 dor + 8 incapacidade), cada um 0–10. Escore total % = soma/130 × 100. Maior = pior. MCID ≈ 8–13 pontos.",
-    tipo:'num', max:10,
-    itens:["DOR: no pior momento","DOR: deitado sobre o lado afetado","DOR: ao alcançar prateleira alta","DOR: ao tocar a nuca","DOR: ao empurrar com o braço","Lavar o cabelo","Lavar as costas","Vestir/tirar camiseta","Vestir camisa com botões","Vestir a calça","Colocar objeto em prateleira alta","Carregar objeto pesado (~5 kg)","Retirar algo do bolso de trás"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<7) return null; return (f.reduce((a,b)=>a+b,0)/(f.length*10))*100;},
-    interp:(s)=> s==null?"Responda os itens": s<30?["Incapacidade leve","b-green"]: s<60?["Incapacidade moderada","b-yellow"]:["Incapacidade grave","b-red"],
-    unidade:"%"
-  },
-  "PRWE (punho/mão)": {
-    ref:"Patient-Rated Wrist Evaluation — 15 itens 0–10 (5 de dor + 10 de função). Escore = soma da dor (0–50) + soma da função ÷ 2 (0–50) = 0–100. Maior = pior.",
-    tipo:'num', max:10,
-    itens:["DOR: em repouso","DOR: em movimento repetido do punho","DOR: ao levantar objeto pesado","DOR: no pior momento","DOR: frequência da dor","FUNÇÃO: virar maçaneta","FUNÇÃO: cortar carne com faca","FUNÇÃO: abotoar a camisa","FUNÇÃO: levantar-se apoiando na mão","FUNÇÃO: carregar 5 kg com o braço acometido","FUNÇÃO: usar papel higiênico","FUNÇÃO: higiene pessoal","FUNÇÃO: atividades de trabalho","FUNÇÃO: atividades de lazer","FUNÇÃO: apoiar o peso na mão"],
-    score:(v)=>{const f=v.map(x=>x==null?null:Number(x)); if(f.slice(0,5).some(x=>x==null)||f.slice(5).some(x=>x==null)) return null; const dor=f.slice(0,5).reduce((a,b)=>a+b,0); const fun=f.slice(5).reduce((a,b)=>a+b,0)/2; return dor+fun;},
-    interp:(s)=> s==null?"Responda todos os itens": s<20?["Comprometimento leve","b-green"]: s<50?["Moderado","b-yellow"]:["Grave","b-red"],
-    unidade:"/100"
-  },
-  "Oxford Hip Score (quadril)": {
-    ref:"12 itens, cada um 0 (pior) a 4 (melhor). Soma 0–48; maior = melhor função. Bandas: 0–19 grave, 20–29 moderado, 30–39 leve, 40–48 satisfatório.",
-    opts:[{l:"0 (pior)",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4 (melhor)",v:4}],
-    itens:["Dor no quadril (geral)","Lavar-se/secar-se por causa do quadril","Entrar/sair do carro ou transporte","Vestir meias/calçar","Fazer compras sozinho","Tempo de caminhada antes da dor","Subir um lance de escadas","Levantar-se de uma cadeira","Mancar ao caminhar","Dor súbita/aguda no quadril","Dor à noite na cama","Interferência da dor no trabalho/tarefas"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<12) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os 12 itens": s>=40?["Função satisfatória","b-green"]: s>=30?["Comprometimento leve","b-yellow"]: s>=20?["Moderado","b-yellow"]:["Grave","b-red"],
-    unidade:"/48"
-  },
-  "Oxford Knee Score (joelho)": {
-    ref:"12 itens, cada um 0 (pior) a 4 (melhor). Soma 0–48; maior = melhor função. Bandas: 0–19 grave, 20–29 moderado, 30–39 leve, 40–48 satisfatório.",
-    opts:[{l:"0 (pior)",v:0},{l:"1",v:1},{l:"2",v:2},{l:"3",v:3},{l:"4 (melhor)",v:4}],
-    itens:["Dor no joelho (geral)","Lavar-se/secar-se","Entrar/sair do carro","Tempo de caminhada antes da dor","Levantar-se de uma cadeira","Mancar ao caminhar","Ajoelhar e levantar em seguida","Dor à noite na cama","Interferência da dor no trabalho/tarefas","Sensação de falseio do joelho","Fazer compras domésticas sozinho","Descer um lance de escadas"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<12) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os 12 itens": s>=40?["Função satisfatória","b-green"]: s>=30?["Comprometimento leve","b-yellow"]: s>=20?["Moderado","b-yellow"]:["Grave","b-red"],
-    unidade:"/48"
-  },
-  "Roland-Morris (lombar)": {
-    ref:"Questionário de incapacidade lombar — 24 afirmações. Marque 'Sim' nas que descrevem você hoje. Soma 0–24; maior = pior. MCID ≈ 3–5 pontos.",
-    opts:[{l:"Não",v:0},{l:"Sim",v:1}],
-    itens:["Fico em casa a maior parte do tempo","Mudo de posição com frequência para aliviar as costas","Ando mais devagar que o normal","Não faço tarefas domésticas que costumava fazer","Uso o corrimão para subir escadas","Deito-me para descansar com mais frequência","Apoio-me em algo para levantar de uma poltrona","Peço ajuda a outras pessoas","Visto-me mais devagar que o normal","Fico de pé apenas por curtos períodos","Evito me abaixar ou ajoelhar","Tenho dificuldade de levantar de uma cadeira","Minhas costas doem quase o tempo todo","Tenho dificuldade de me virar na cama","Tenho pouco apetite por causa da dor","Tenho dificuldade de calçar meias/sapatos","Caminho apenas distâncias curtas","Durmo pior por causa das costas","Visto-me com ajuda de outras pessoas","Fico sentado a maior parte do dia","Evito trabalhos pesados em casa","Fico mais irritado/mau humorado","Subo escadas mais devagar que o normal","Fico na cama a maior parte do tempo"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os itens": s<=3?["Incapacidade mínima","b-green"]: s<=13?["Moderada","b-yellow"]:["Grave","b-red"],
-    unidade:"/24"
-  },
-  "FAAM-ADL (tornozelo/pé)": {
-    ref:"Foot and Ankle Ability Measure — subescala AVD (21 itens, 0–4). Escore % = soma/(itens×4) × 100; maior = melhor função.",
-    opts:[{l:"4 Sem dificuldade",v:4},{l:"3 Pouca",v:3},{l:"2 Moderada",v:2},{l:"1 Muita",v:1},{l:"0 Incapaz",v:0}],
-    itens:["Ficar em pé","Caminhar em terreno plano","Caminhar descalço","Subir ladeira","Descer ladeira","Subir escadas","Descer escadas","Caminhar em terreno irregular","Subir/descer o meio-fio","Agachar","Ficar na ponta dos pés","Iniciar a caminhada","Caminhar 5 min ou menos","Caminhar ~10 min","Caminhar 15 min ou mais","Tarefas domésticas","Atividades da vida diária","Cuidados pessoais","Trabalho leve a moderado","Trabalho pesado","Atividades recreativas"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<15) return null; return (f.reduce((a,b)=>a+b,0)/(f.length*4))*100;},
-    interp:(s)=> s==null?"Responda os itens": s>=90?["Boa função","b-green"]: s>=75?["Limitação leve","b-yellow"]:["Limitação importante","b-red"],
-    unidade:"%"
-  },
-  "Central Sensitization Inventory (CSI)": {
-    ref:"Inventário de Sensibilização Central — 25 itens (0–4). Soma 0–100. Bandas: <30 subclínico, 30–39 leve, 40–49 moderado, 50–59 grave, ≥60 extremo. ≥40 sugere sensibilização central.",
-    opts:[{l:"0 Nunca",v:0},{l:"1 Raramente",v:1},{l:"2 Às vezes",v:2},{l:"3 Frequentemente",v:3},{l:"4 Sempre",v:4}],
-    itens:["Acordo sem me sentir descansado","Sinto os músculos rígidos e doloridos","Tenho crises de ansiedade","Range/aperto os dentes","Tenho diarreia e/ou prisão de ventre","Preciso de ajuda nas atividades diárias","Sou sensível a luzes fortes","Canso-me facilmente com atividade física","Sinto dor por todo o corpo","Tenho dores de cabeça","Desconforto/aumento da frequência ao urinar","Durmo mal","Dificuldade de concentração","Problemas de pele (coceira/manchas)","O estresse piora meus sintomas físicos","Sinto-me triste ou deprimido","Tenho pouca energia","Tensão muscular no pescoço e ombros","Dor na mandíbula","Certos cheiros me incomodam","Acordo à noite para urinar","Pernas inquietas à noite","Dificuldade para lembrar das coisas","Sofri traumas na infância","Dor na região pélvica"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<20) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os itens": s<30?["Subclínico","b-green"]: s<40?["Leve","b-yellow"]: s<50?["Moderado","b-yellow"]: s<60?["Grave","b-red"]:["Extremo","b-red"],
-    unidade:"/100"
-  },
-  "Escala de Pensamentos Catastróficos (PCS)": {
-    ref:"Pain Catastrophizing Scale — 13 itens (0–4) sobre o que sente quando está com dor. Soma 0–52; ≥30 indica catastrofização clinicamente relevante.",
-    opts:[{l:"0 Nada",v:0},{l:"1 Um pouco",v:1},{l:"2 Moderadamente",v:2},{l:"3 Muito",v:3},{l:"4 O tempo todo",v:4}],
-    itens:["Fico preocupado se a dor vai passar","Sinto que não consigo continuar","É terrível e penso que nunca vai melhorar","É horrível e sinto que me domina","Sinto que não aguento mais","Tenho medo de que a dor piore","Penso em outras situações dolorosas","Desejo intensamente que a dor desapareça","Não consigo tirar a dor da cabeça","Fico pensando o quanto dói","Fico pensando em quanto quero que pare","Sinto que não há nada que reduza a dor","Imagino se algo grave pode acontecer"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<13) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os 13 itens": s<20?["Baixo","b-green"]: s<30?["Moderado","b-yellow"]:["Clinicamente relevante","b-red"],
-    unidade:"/52"
-  },
-  "FES-I (medo de cair)": {
-    ref:"Falls Efficacy Scale International — 16 itens (1–4) sobre preocupação em cair. Soma 16–64. Bandas: 16–22 baixa, 23–30 moderada, ≥31 alta preocupação (maior risco de quedas).",
-    opts:[{l:"1 Nada preocupado",v:1},{l:"2 Um pouco",v:2},{l:"3 Bastante",v:3},{l:"4 Muito preocupado",v:4}],
-    itens:["Limpar a casa","Vestir-se/despir-se","Preparar refeições simples","Tomar banho","Fazer compras","Sentar/levantar de uma cadeira","Subir/descer escadas","Caminhar pela vizinhança","Pegar algo acima da cabeça ou no chão","Atender o telefone a tempo","Caminhar em superfície escorregadia","Visitar amigos/parentes","Andar em local cheio de gente","Caminhar em superfície irregular","Subir/descer ladeira","Participar de atividade social"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<16) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os 16 itens": s<=22?["Baixa preocupação","b-green"]: s<=30?["Moderada","b-yellow"]:["Alta preocupação / risco","b-red"],
-    unidade:"/64"
-  },
-  "MIF (Medida de Independência Funcional)": {
-    ref:"Medida de Independência Funcional — 18 itens, cada um 1 (ajuda total) a 7 (independência completa). Soma 18–126; maior = mais independente.",
-    opts:[{l:"7 Independência completa",v:7},{l:"6 Independência modificada",v:6},{l:"5 Supervisão",v:5},{l:"4 Ajuda mínima (≥75% sozinho)",v:4},{l:"3 Ajuda moderada (≥50%)",v:3},{l:"2 Ajuda máxima (≥25%)",v:2},{l:"1 Ajuda total (<25%)",v:1}],
-    itens:["Autocuidado: alimentação","Autocuidado: higiene pessoal","Autocuidado: banho","Autocuidado: vestir metade superior","Autocuidado: vestir metade inferior","Autocuidado: uso do vaso sanitário","Controle da bexiga","Controle do intestino","Transferência: leito/cadeira/cadeira de rodas","Transferência: vaso sanitário","Transferência: banheira/chuveiro","Locomoção: marcha ou cadeira de rodas","Locomoção: escadas","Comunicação: compreensão","Comunicação: expressão","Cognição social: interação social","Cognição social: resolução de problemas","Cognição social: memória"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<14) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os itens": s>=108?["Independência (completa/modificada)","b-green"]: s>=72?["Dependência leve/moderada","b-yellow"]: s>=36?["Dependência moderada/grave","b-red"]:["Dependência total","b-red"],
-    unidade:"/126"
-  },
-  "Dynamic Gait Index (DGI)": {
-    ref:"Índice de Marcha Dinâmica — 8 tarefas, cada uma 0 (grave) a 3 (normal). Soma 0–24. ≤19 indica risco aumentado de quedas.",
-    opts:[{l:"3 Normal",v:3},{l:"2 Comprom. leve",v:2},{l:"1 Comprom. moderado",v:1},{l:"0 Comprom. grave",v:0}],
-    itens:["Marcha em superfície plana","Mudança de velocidade da marcha","Marcha com giros horizontais da cabeça","Marcha com giros verticais da cabeça","Marcha, parar e girar sobre o próprio eixo","Passar por cima de obstáculo","Contornar obstáculos","Subir e descer escadas"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<8) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda as 8 tarefas": s>=22?["Baixo risco de queda","b-green"]: s>=19?["Atenção","b-yellow"]:["Risco aumentado de queda","b-red"],
-    unidade:"/24"
-  },
-  "Escala de Rankin modificada (mRS)": {
-    ref:"Grau global de incapacidade (frequente pós-AVC). Selecione um grau de 0 a 6. Maior = mais incapacidade.",
-    opts:[{l:"0 Sem sintomas",v:0},{l:"1 Sem incapacidade significativa",v:1},{l:"2 Incapacidade leve (independente)",v:2},{l:"3 Incapacidade moderada (anda sem ajuda)",v:3},{l:"4 Mod./grave (não anda sem ajuda)",v:4},{l:"5 Grave (acamado, cuidados constantes)",v:5},{l:"6 Óbito",v:6}],
-    itens:["Grau de incapacidade global"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f[0];},
-    interp:(s)=> s==null?"Selecione o grau": s<=1?["Sem incapacidade relevante","b-green"]: s<=3?["Incapacidade leve a moderada","b-yellow"]:["Incapacidade grave","b-red"],
-    unidade:"/6"
-  },
-  "FAC (Categorias de Deambulação Funcional)": {
-    ref:"Classifica a marcha de 0 (não funcional) a 5 (independente em qualquer superfície). Maior = melhor.",
-    opts:[{l:"0 Não funcional / 2 pessoas",v:0},{l:"1 Apoio contínuo de 1 pessoa",v:1},{l:"2 Apoio leve/intermitente de 1 pessoa",v:2},{l:"3 Supervisão (sem contato físico)",v:3},{l:"4 Independente em superfície plana",v:4},{l:"5 Independente (escadas/rampas)",v:5}],
-    itens:["Categoria de deambulação"],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(!f.length) return null; return f[0];},
-    interp:(s)=> s==null?"Selecione a categoria": s>=4?["Marcha independente","b-green"]: s>=2?["Marcha com assistência","b-yellow"]:["Marcha não funcional","b-red"],
-    unidade:"/5"
-  },
-  "Escala de Coma de Glasgow (GCS)": {
-    ref:"Nível de consciência — abertura ocular (1–4) + resposta verbal (1–5) + resposta motora (1–6). Total 3–15. ≤8 indica coma/lesão grave.",
-    itens:[
-      {q:"Abertura ocular", opts:[{l:"4 Espontânea",v:4},{l:"3 Ao estímulo verbal",v:3},{l:"2 À dor",v:2},{l:"1 Ausente",v:1}]},
-      {q:"Resposta verbal", opts:[{l:"5 Orientada",v:5},{l:"4 Confusa",v:4},{l:"3 Palavras inapropriadas",v:3},{l:"2 Sons incompreensíveis",v:2},{l:"1 Ausente",v:1}]},
-      {q:"Resposta motora", opts:[{l:"6 Obedece a comandos",v:6},{l:"5 Localiza a dor",v:5},{l:"4 Retirada à dor",v:4},{l:"3 Flexão anormal (decorticação)",v:3},{l:"2 Extensão (descerebração)",v:2},{l:"1 Ausente",v:1}]}
-    ],
-    score:(v)=>{const f=v.filter(x=>x!=null); if(f.length<3) return null; return f.reduce((a,b)=>a+b,0);},
-    interp:(s)=> s==null?"Responda os 3 componentes": s>=13?["Leve","b-green"]: s>=9?["Moderado","b-yellow"]:["Grave","b-red"],
-    unidade:"/15"
+function switchFichaTab(el, id) {
+  document.querySelectorAll('.ficha-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.ficha-panel').forEach(p => p.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  const cfg = _tabCfg[id];
+  const bar = document.querySelector('.ficha-screen-tabs');
+  if (bar && cfg) {
+    bar.innerHTML = cfg.tabs.map((t,i) =>
+      `<div class="fs-tab${i===cfg.active?' active':''}">${t}</div>`
+    ).join('');
   }
-};
-
-// Escalas de medida única (sem itens) — entrada de valor + interpretação
-const ESCALAS_SIMPLES = {
-  "Timed Up and Go (TUG)": {
-    ref:"Tempo (s) para levantar de uma cadeira, andar 3 m, voltar e sentar. <10s normal; ≥13,5s risco de queda em idosos.",
-    unidade:"s",
-    interp:(t)=> t==null||isNaN(t)?"Informe o tempo": t<10?["Mobilidade normal","b-green"]: t<13.5?["Atenção","b-yellow"]: t<30?["Risco aumentado de queda","b-red"]:["Mobilidade muito reduzida","b-red"]
-  },
-  "Teste de apoio unipodal": {
-    ref:"Tempo (s) de equilíbrio em um pé. <5s associado a maior risco de quedas em idosos.",
-    unidade:"s",
-    interp:(t)=> t==null||isNaN(t)?"Informe o tempo": t>=30?["Bom equilíbrio","b-green"]: t>=10?["Aceitável","b-yellow"]:["Equilíbrio reduzido / risco","b-red"]
-  },
-  "Teste de caminhada de 6 minutos (TC6)": {
-    ref:"Distância percorrida (m) em 6 min — capacidade funcional/cardiorrespiratória. Comparar com valores previstos por idade/sexo (eq. de Enright).",
-    unidade:"m",
-    interp:(d)=> d==null||isNaN(d)?"Informe a distância": d>=500?["Boa capacidade","b-green"]: d>=350?["Capacidade moderada","b-yellow"]:["Capacidade reduzida","b-red"]
-  }
-};
-
-// Agrupamento das escalas por articulação / região
-const SEG_ESCALAS = {
-  "QuickDASH (membro superior)":"Ombro",
-  "SPADI (ombro)":"Ombro",
-  "PRWE (punho/mão)":"Cotovelo / Punho / Mão",
-  "Índice de Incapacidade Cervical (NDI)":"Coluna cervical",
-  "Índice de Incapacidade Oswestry (ODI) — lombar":"Coluna lombar",
-  "Roland-Morris (lombar)":"Coluna lombar",
-  "Oxford Hip Score (quadril)":"Quadril",
-  "Oxford Knee Score (joelho)":"Joelho",
-  "Escala de Lysholm (joelho)":"Joelho",
-  "WOMAC (osteoartrite quadril/joelho)":"Joelho",
-  "FAAM-ADL (tornozelo/pé)":"Tornozelo / Pé",
-  "Central Sensitization Inventory (CSI)":"Dor e fatores biopsicossociais",
-  "Escala de Pensamentos Catastróficos (PCS)":"Dor e fatores biopsicossociais",
-  "MIF (Medida de Independência Funcional)":"Neurofuncional",
-  "Dynamic Gait Index (DGI)":"Neurofuncional",
-  "Escala de Rankin modificada (mRS)":"Neurofuncional",
-  "FAC (Categorias de Deambulação Funcional)":"Neurofuncional",
-  "Escala de Coma de Glasgow (GCS)":"Neurofuncional",
-  "Escala de Equilíbrio de Berg":"Equilíbrio e gerontologia",
-  "Tinetti (POMA) — equilíbrio e marcha":"Equilíbrio e gerontologia",
-  "Índice de Barthel (AVDs)":"Equilíbrio e gerontologia",
-  "FES-I (medo de cair)":"Equilíbrio e gerontologia",
-  "Timed Up and Go (TUG)":"Equilíbrio e gerontologia",
-  "Teste de apoio unipodal":"Equilíbrio e gerontologia",
-  "Teste de caminhada de 6 minutos (TC6)":"Capacidade funcional / cardiorrespiratória"
-};
-const SEG_ORDEM = ["Ombro","Cotovelo / Punho / Mão","Coluna cervical","Coluna lombar","Quadril","Joelho","Tornozelo / Pé","Dor e fatores biopsicossociais","Neurofuncional","Equilíbrio e gerontologia","Capacidade funcional / cardiorrespiratória"];
-
-/* ====================== ESTADO / PERSISTÊNCIA (MULTIPACIENTE) ====================== */
-const DB_KEY='fichaFisioDB_v1';
-const STORE_LEGADO='fichaFisioEvidencia_v1';
-let DB={pacientes:[], atualId:null};
-let dados = novaFicha();
-
-function novaFicha(){return {regioesAtivas:[], escalasAtivas:[], escalaVals:{}, sessoes:[], mapaDor:[], imagens:[], campos:{}};}
-function hojeISO(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
-function uid(){return 'p'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
-
-function criarRegistro(nome, fichaDados){
-  const reg={id:uid(), nome:(nome&&nome.trim())||'Sem nome', criadoEm:hojeISO(), atualizadoEm:hojeISO(), dados:Object.assign(novaFicha(), fichaDados||{})};
-  DB.pacientes.push(reg); return reg;
-}
-function pacienteAtual(){return DB.pacientes.find(p=>p.id===DB.atualId);}
-function persistDB(){localStorage.setItem(DB_KEY, JSON.stringify(DB));}
-
-function carregarDB(){
-  try{const s=JSON.parse(localStorage.getItem(DB_KEY)); if(s&&s.pacientes) DB=s;}catch(e){}
-  if(!DB.pacientes.length){ // migração de ficha antiga (formato 1 paciente)
-    let legado=null; try{legado=JSON.parse(localStorage.getItem(STORE_LEGADO));}catch(e){}
-    if(legado&&legado.campos){const p=criarRegistro(legado.campos.id_nome||'Paciente importado', legado); DB.atualId=p.id; localStorage.removeItem(STORE_LEGADO);}
-  }
-  if(!DB.pacientes.length){const p=criarRegistro('Novo paciente'); DB.atualId=p.id;}
-  if(!DB.atualId||!pacienteAtual()) DB.atualId=DB.pacientes[0].id;
-  dados=Object.assign(novaFicha(), pacienteAtual().dados);
-  DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
-  persistDB();
-}
-
-function coletarCampos(){
-  document.querySelectorAll('[data-k]').forEach(el=>{
-    if(el.type==='checkbox') dados.campos[el.dataset.k]=el.checked;
-    else dados.campos[el.dataset.k]=el.value;
-  });
-}
-function salvar(silent){
-  coletarCampos();
-  const p=pacienteAtual();
-  if(p){p.dados=dados; const nm=dados.campos.id_nome&&dados.campos.id_nome.trim(); p.nome=nm||p.nome||'Sem nome'; p.atualizadoEm=hojeISO();}
-  persistDB();
-  atualizarSeletorPacientes();
-  if(!silent) flash('Salvo ✓');
-}
-function flash(msg){
-  let f=document.createElement('div');
-  f.textContent=msg; f.style.cssText='position:fixed;bottom:18px;right:18px;background:#1b7f4b;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-  document.body.appendChild(f); setTimeout(()=>f.remove(),1400);
-}
-function resetCamposDOM(){
-  document.querySelectorAll('[data-k]').forEach(el=>{
-    if(el.type==='checkbox') el.checked=false;
-    else if(el.type==='range'){el.value=0; if(el.nextElementSibling) el.nextElementSibling.textContent='0/10';}
-    else el.value='';
-  });
-}
-function restaurarCampos(){
-  for(const k in dados.campos){
-    const el=document.querySelector(`[data-k="${k}"]`);
-    if(!el) continue;
-    if(el.type==='checkbox') el.checked=dados.campos[k];
-    else { el.value=dados.campos[k]; if(el.type==='range' && el.nextElementSibling) el.nextElementSibling.textContent=el.value+'/10'; }
-  }
-}
-
-/* ====================== GESTÃO DE PACIENTES ====================== */
-function aplicarFichaNaUI(){
-  resetCamposDOM();
-  initRegioes();
-  initEscalas();
-  renderSessoes();
-  renderImagens();
-  renderMapaDor();
-  renderGrafico();
-  restaurarCampos();
-  bindCampos();
-}
-function trocarPaciente(id){
-  salvar(true);
-  DB.atualId=id;
-  dados=Object.assign(novaFicha(), pacienteAtual().dados);
-  persistDB();
-  aplicarFichaNaUI();
-  atualizarSeletorPacientes();
-}
-function novoPaciente(){
-  salvar(true);
-  const p=criarRegistro('Novo paciente');
-  p.dados.campos.id_data=hojeISO();
-  DB.atualId=p.id;
-  dados=Object.assign(novaFicha(), p.dados);
-  persistDB();
-  aplicarFichaNaUI();
-  atualizarSeletorPacientes();
-  flash('Novo paciente criado');
-  const nome=document.querySelector('[data-k="id_nome"]'); if(nome) nome.focus();
-}
-function excluirPaciente(){
-  const p=pacienteAtual(); if(!p) return;
-  if(DB.pacientes.length<=1){alert('Não é possível excluir o único paciente. Crie outro antes.');return;}
-  if(!confirm(`Excluir definitivamente o paciente "${p.nome}"? Esta ação não pode ser desfeita.`)) return;
-  DB.pacientes=DB.pacientes.filter(x=>x.id!==p.id);
-  DB.atualId=DB.pacientes[0].id;
-  dados=Object.assign(novaFicha(), pacienteAtual().dados);
-  persistDB(); aplicarFichaNaUI(); atualizarSeletorPacientes();
-}
-function atualizarSeletorPacientes(){
-  const sel=document.getElementById('selPaciente'); if(!sel) return;
-  const termo=(document.getElementById('buscaPaciente')?.value||'').toLowerCase();
-  const lista=[...DB.pacientes].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  sel.innerHTML='';
-  lista.filter(p=>!termo||(p.nome||'').toLowerCase().includes(termo)).forEach(p=>{
-    const o=document.createElement('option'); o.value=p.id;
-    o.textContent=(p.nome||'Sem nome')+(p.atualizadoEm?` — ${p.atualizadoEm.split('-').reverse().join('/')}`:'');
-    if(p.id===DB.atualId) o.selected=true; sel.appendChild(o);
-  });
-  const cont=document.getElementById('contadorPacientes'); if(cont) cont.textContent=DB.pacientes.length+' paciente(s)';
-}
-
-/* ====================== RENDER ABAS ====================== */
-function initTabs(){
-  const tabs=document.querySelectorAll('.tab'); const nav=document.getElementById('tabs');
-  tabs.forEach((t,i)=>{
-    const b=document.createElement('button');
-    b.textContent=t.dataset.tab;
-    b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active'); b.classList.add('active'); window.scrollTo(0,0);};
-    nav.appendChild(b); if(i===0){t.classList.add('active');b.classList.add('active');}
-  });
-}
-
-/* ====================== RED FLAGS ====================== */
-function initRedFlags(){
-  const c=document.getElementById('redflags');
-  RED_FLAGS.forEach((rf,i)=>{
-    const lab=document.createElement('label'); lab.className='opt';
-    lab.innerHTML=`<input type="checkbox" data-k="rf_${i}"> ${rf}`;
-    c.appendChild(lab);
-  });
-}
-
-/* ====================== REGIÕES ====================== */
-function initRegioes(){
-  const btns=document.getElementById('regionBtns'); btns.innerHTML='';
-  Object.keys(REGIOES).forEach(r=>{
-    const b=document.createElement('button'); b.textContent=r;
-    if(dados.regioesAtivas.includes(r)) b.classList.add('active');
-    b.onclick=()=>{
-      if(dados.regioesAtivas.includes(r)) dados.regioesAtivas=dados.regioesAtivas.filter(x=>x!==r);
-      else dados.regioesAtivas.push(r);
-      b.classList.toggle('active'); renderRegioes(); salvar(true);
-    };
-    btns.appendChild(b);
-  });
-  renderRegioes();
-}
-function renderRegioes(){
-  const c=document.getElementById('regionContent'); c.innerHTML='';
-  dados.regioesAtivas.forEach(r=>{
-    const R=REGIOES[r]; const div=document.createElement('div'); div.className='card'; div.style.background='#fbfdff';
-    let html=`<h3 style="margin-top:0">${r}</h3>`;
-    // ADM
-    html+=`<table><tr><th>Movimento</th><th>ADM normal</th><th>Direita</th><th>Esquerda</th><th>Dor (S/N)</th></tr>`;
-    R.adm.forEach((m,i)=>{
-      const key=`adm_${r}_${i}`;
-      html+=`<tr><td>${m[0]}</td><td>${m[1]}</td>
-        <td><input data-k="${key}_d" style="padding:4px"></td>
-        <td><input data-k="${key}_e" style="padding:4px"></td>
-        <td><input data-k="${key}_dor" style="padding:4px;width:50px"></td></tr>`;
-    });
-    html+=`</table>`;
-    // Força
-    html+=`<h3>Força muscular (MRC 0–5)</h3><table><tr><th>Músculo / grupo</th><th>Direita</th><th>Esquerda</th></tr>`;
-    R.forca.forEach((m,i)=>{
-      const key=`forca_${r}_${i}`;
-      html+=`<tr><td>${m}</td>
-        <td><input data-k="${key}_d" style="padding:4px;width:70px"></td>
-        <td><input data-k="${key}_e" style="padding:4px;width:70px"></td></tr>`;
-    });
-    html+=`</table>`;
-    // Testes especiais
-    html+=`<h3>Testes especiais</h3>
-      <div class="legend no-print">Clique em <b>📷 Imagens</b> ou <b>🎬 Vídeo</b> para abrir uma referência ilustrativa de como executar o teste (abre em nova aba).</div>
-      <table><tr><th>Teste / referência</th><th>Avalia / acurácia</th><th>Resultado</th><th>Obs.</th></tr>`;
-    R.testes.forEach((t,i)=>{
-      const key=`teste_${r}_${i}`;
-      const q=encodeURIComponent(`${t[0]} ${r} teste fisioterapia`);
-      const img=`https://www.google.com/search?tbm=isch&q=${q}`;
-      const vid=`https://www.youtube.com/results?search_query=${q}`;
-      html+=`<tr><td><b>${t[0]}</b>
-        <div class="reflinks no-print">
-          <a class="reflink" href="${img}" target="_blank" rel="noopener">📷 Imagens</a>
-          <a class="reflink" href="${vid}" target="_blank" rel="noopener">🎬 Vídeo</a>
-        </div></td>
-        <td>${t[1]}${t[2]?`<br><span class="ref">${t[2]}</span>`:''}</td>
-        <td><select data-k="${key}_res" style="padding:4px"><option value="">—</option><option>Negativo</option><option>Positivo</option><option>Não realizado</option></select></td>
-        <td><input data-k="${key}_obs" style="padding:4px"></td></tr>`;
-    });
-    html+=`</table>`;
-    div.innerHTML=html; c.appendChild(div);
-  });
-  restaurarCampos();
-  bindCampos();
-}
-
-/* ====================== ESCALAS ====================== */
-function initEscalas(){
-  const btns=document.getElementById('scaleBtns'); btns.innerHTML='';
-  const todas=[...Object.keys(ESCALAS),...Object.keys(ESCALAS_SIMPLES)];
-  const grupos={};
-  todas.forEach(n=>{const g=SEG_ESCALAS[n]||"Outras";(grupos[g]=grupos[g]||[]).push(n);});
-  const ordem=[...SEG_ORDEM,...Object.keys(grupos).filter(g=>!SEG_ORDEM.includes(g))];
-  ordem.forEach(g=>{
-    if(!grupos[g]) return;
-    const h=document.createElement('div'); h.className='seg-head'; h.textContent=g; btns.appendChild(h);
-    grupos[g].forEach(nome=>{
-      const b=document.createElement('button'); b.textContent=nome;
-      if(dados.escalasAtivas.includes(nome)) b.classList.add('active');
-      b.onclick=()=>{
-        if(dados.escalasAtivas.includes(nome)) dados.escalasAtivas=dados.escalasAtivas.filter(x=>x!==nome);
-        else dados.escalasAtivas.push(nome);
-        b.classList.toggle('active'); renderEscalas(); salvar(true);
-      };
-      btns.appendChild(b);
-    });
-  });
-  renderEscalas();
-}
-function renderEscalas(){
-  const c=document.getElementById('scaleContent'); c.innerHTML='';
-  const ativas=[...dados.escalasAtivas].sort((a,b)=>{
-    const ia=SEG_ORDEM.indexOf(SEG_ESCALAS[a]||'z'), ib=SEG_ORDEM.indexOf(SEG_ESCALAS[b]||'z');
-    return (ia<0?99:ia)-(ib<0?99:ib);
-  });
-  let segAtual=null;
-  ativas.forEach(nome=>{
-    const seg=SEG_ESCALAS[nome]||'Outras';
-    if(seg!==segAtual){segAtual=seg;const h=document.createElement('div');h.className='seg-head';h.textContent=seg;c.appendChild(h);}
-    const div=document.createElement('div'); div.className='card'; div.style.background='#fbfdff';
-    if(ESCALAS[nome]){
-      const E=ESCALAS[nome];
-      let html=`<h3 style="margin-top:0">${nome}</h3><div class="ref">${E.ref}</div>`;
-      E.itens.forEach((it,i)=>{
-        const id=`esc_${nome}_${i}`;
-        const itQ=(typeof it==='object'&&it.q)?it.q:it;
-        if(E.tipo==='num'){
-          const cur=dados.escalaVals[id]??'';
-          html+=`<div class="scale-item"><p>${i+1}. ${itQ}</p>`+
-            `<input type="number" min="0" max="${E.max}" step="1" value="${cur}" style="max-width:90px" oninput="setEscala('${escId(nome)}',${i}, this.value===''?null:Number(this.value))">`+
-            `<span style="font-size:11px;color:var(--cinza);margin-left:6px">0–${E.max}</span></div>`;
-        } else {
-          const itOpts=(typeof it==='object'&&it.opts)?it.opts:E.opts;
-          html+=`<div class="scale-item"><p>${i+1}. ${itQ}</p><div style="display:flex;flex-wrap:wrap;gap:10px">`;
-          itOpts.forEach(o=>{
-            const checked = dados.escalaVals[id]==o.v ? 'checked':'';
-            html+=`<label class="opt"><input type="radio" name="${id}" value="${o.v}" ${checked} onchange="setEscala('${escId(nome)}',${i},${o.v})"> ${o.l}</label>`;
-          });
-          html+=`</div></div>`;
-        }
-      });
-      html+=`<div id="score_${escId(nome)}"></div>`;
-      div.innerHTML=html; c.appendChild(div);
-      calcEscala(nome);
-    } else {
-      const E=ESCALAS_SIMPLES[nome]; const id=`escS_${nome}`;
-      let html=`<h3 style="margin-top:0">${nome}</h3><div class="ref">${E.ref}</div>
-        <label class="field" style="max-width:240px">Valor (${E.unidade})
-        <input type="number" step="0.1" value="${dados.escalaVals[id]??''}" oninput="setEscalaSimples('${escId(nome)}','${id}',this.value)"></label>
-        <div id="score_${escId(nome)}"></div>`;
-      div.innerHTML=html; c.appendChild(div);
-      calcEscalaSimples(nome,id,dados.escalaVals[id]);
-    }
-  });
-}
-function escId(n){return n.replace(/[^a-zA-Z0-9]/g,'_');}
-function setEscala(idSafe,i,v){
-  const nome=Object.keys(ESCALAS).find(n=>escId(n)===idSafe);
-  dados.escalaVals[`esc_${nome}_${i}`]=v; calcEscala(nome); salvar(true);
-}
-function calcEscala(nome){
-  const E=ESCALAS[nome];
-  const vals=E.itens.map((_,i)=>dados.escalaVals[`esc_${nome}_${i}`]);
-  const valsNum=vals.map(x=>x==null?null:Number(x));
-  const s=E.score(valsNum);
-  const box=document.getElementById('score_'+escId(nome)); if(!box) return;
-  if(s==null){box.innerHTML=`<div class="scale-score">${E.interp(null)}</div>`;return;}
-  const it=E.interp(s);
-  box.innerHTML=`<span class="scale-score">Pontuação: ${s.toFixed(1)}${E.unidade}</span>
-    <span class="badge ${it[1]}" style="margin-left:8px">${it[0]}</span>`;
-}
-function setEscalaSimples(idSafe,id,v){
-  dados.escalaVals[id]= v===''?null:Number(v);
-  const nome=Object.keys(ESCALAS_SIMPLES).find(n=>escId(n)===idSafe);
-  calcEscalaSimples(nome,id,dados.escalaVals[id]); salvar(true);
-}
-function calcEscalaSimples(nome,id,v){
-  const E=ESCALAS_SIMPLES[nome]; const box=document.getElementById('score_'+escId(nome)); if(!box) return;
-  const it=E.interp(v==null?null:Number(v));
-  if(v==null||v===''){box.innerHTML=`<div class="scale-score">${it}</div>`;return;}
-  box.innerHTML=`<span class="scale-score">${v} ${E.unidade}</span>
-    <span class="badge ${it[1]}" style="margin-left:8px">${it[0]}</span>`;
-}
-
-/* ====================== EVOLUÇÃO ====================== */
-function renderSessoes(){
-  const c=document.getElementById('sessoes'); c.innerHTML='';
-  if(!dados.sessoes.length){c.innerHTML='<p class="ref">Nenhuma sessão registrada.</p>';return;}
-  dados.sessoes.forEach((s,i)=>{
-    const div=document.createElement('div'); div.className='evo-session';
-    div.innerHTML=`
-      <div class="evo-head"><strong>Sessão ${i+1}</strong>
-        <button class="del no-print" onclick="delSessao(${i})">Remover</button></div>
-      <div class="grid g4">
-        <label class="field">Data<input type="date" value="${s.data||''}" onchange="updSessao(${i},'data',this.value)"></label>
-        <label class="field">EVA (0–10)<input type="number" min="0" max="10" value="${s.eva||''}" onchange="updSessao(${i},'eva',this.value)"></label>
-        <label class="field">ADM / ganho<input value="${s.adm||''}" onchange="updSessao(${i},'adm',this.value)"></label>
-        <label class="field">Nº atendimento<input value="${s.num||''}" onchange="updSessao(${i},'num',this.value)"></label>
-      </div>
-      <div class="grid g2" style="margin-top:8px">
-        <label class="field">Conduta realizada<textarea onchange="updSessao(${i},'conduta',this.value)">${s.conduta||''}</textarea></label>
-        <label class="field">Evolução / resposta / intercorrências<textarea onchange="updSessao(${i},'evol',this.value)">${s.evol||''}</textarea></label>
-      </div>`;
-    c.appendChild(div);
-  });
-}
-function addSessao(){dados.sessoes.push({data:'',eva:'',adm:'',num:'',conduta:'',evol:''});renderSessoes();renderGrafico();salvar(true);}
-function updSessao(i,k,v){dados.sessoes[i][k]=v;if(k==='eva'||k==='data')renderGrafico();salvar(true);}
-function delSessao(i){if(confirm('Remover esta sessão?')){dados.sessoes.splice(i,1);renderSessoes();renderGrafico();salvar(true);}}
-
-/* ====================== EXAMES DE IMAGEM ====================== */
-const TIPOS_EXAME=['','Radiografia (RX)','Ultrassonografia (US)','Tomografia (TC)','Ressonância magnética (RM)','Densitometria óssea','Cintilografia','Eletroneuromiografia (EMG/ENMG)','Outro'];
-function renderImagens(){
-  const c=document.getElementById('imagens'); if(!c) return; c.innerHTML='';
-  if(!dados.imagens||!dados.imagens.length){c.innerHTML='<p class="ref">Nenhum exame registrado.</p>';return;}
-  dados.imagens.forEach((s,i)=>{
-    const div=document.createElement('div'); div.className='evo-session';
-    div.innerHTML=`
-      <div class="evo-head"><strong>Exame ${i+1}</strong>
-        <button class="del no-print" onclick="delImagem(${i})">Remover</button></div>
-      <div class="grid g3">
-        <label class="field">Tipo<select onchange="updImagem(${i},'tipo',this.value)">${TIPOS_EXAME.map(o=>`<option ${s.tipo===o?'selected':''}>${o}</option>`).join('')}</select></label>
-        <label class="field">Data<input type="date" value="${s.data||''}" onchange="updImagem(${i},'data',this.value)"></label>
-        <label class="field">Região / segmento<input value="${s.regiao||''}" onchange="updImagem(${i},'regiao',this.value)"></label>
-      </div>
-      <div class="grid g2" style="margin-top:8px">
-        <label class="field">Achados<textarea onchange="updImagem(${i},'achados',this.value)">${s.achados||''}</textarea></label>
-        <label class="field">Laudo / conclusão<textarea onchange="updImagem(${i},'laudo',this.value)">${s.laudo||''}</textarea></label>
-      </div>`;
-    c.appendChild(div);
-  });
-}
-function addImagem(){dados.imagens=dados.imagens||[];dados.imagens.push({tipo:'',data:'',regiao:'',achados:'',laudo:''});renderImagens();salvar(true);}
-function updImagem(i,k,v){dados.imagens[i][k]=v;salvar(true);}
-function delImagem(i){if(confirm('Remover este exame?')){dados.imagens.splice(i,1);renderImagens();salvar(true);}}
-
-/* ====================== MÓDULOS: AGENDA E FINANCEIRO ====================== */
-const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const CORST={Agendado:'#5b6b7b',Confirmado:'#1b7f4b',Atendido:'#1769aa',Faltou:'#b8860b',Cancelado:'#b3261e'};
-let agSelDate = hojeISO();
-let finMes = hojeISO().slice(0,7);
-
-function escAttr(s){return (s||'').replace(/"/g,'&quot;');}
-function escTxt(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtData(iso){if(!iso) return '—'; const p=(''+iso).split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso;}
-function moeda(v){return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function nomePacienteAtual(){const p=pacienteAtual(); return (p&&p.dados&&p.dados.campos&&p.dados.campos.id_nome)||'';}
-function isoDe(d){const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
-
-function setView(mode){
-  const ficha=mode==='ficha';
-  const nav=document.getElementById('tabs'); if(nav) nav.style.display=ficha?'':'none';
-  const pb=document.querySelector('.patient-bar'); if(pb) pb.style.display=ficha?'':'none';
-  document.querySelectorAll('main > section.tab').forEach(s=>{ s.style.display = ficha?'':'none'; });
-  const va=document.getElementById('viewAgenda'), vf=document.getElementById('viewFinanceiro');
-  if(va) va.style.display = mode==='agenda'?'':'none';
-  if(vf) vf.style.display = mode==='financeiro'?'':'none';
-  document.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===mode));
-  if(mode==='agenda') renderAgenda();
-  if(mode==='financeiro') renderFinanceiro();
-  window.scrollTo(0,0);
-}
-
-/* --- Modal genérico --- */
-function abrirModal(html){
-  fecharModal();
-  const ov=document.createElement('div'); ov.id='modalOv'; ov.className='modal-ov';
-  ov.onclick=(e)=>{if(e.target===ov) fecharModal();};
-  ov.innerHTML=`<div class="modal">${html}</div>`;
-  document.body.appendChild(ov);
-}
-function fecharModal(){const m=document.getElementById('modalOv'); if(m) m.remove();}
-
-/* --- Agenda --- */
-function semanaDe(iso){const d=new Date(iso+'T00:00:00'); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow); const out=[]; for(let i=0;i<7;i++){const x=new Date(mon); x.setDate(mon.getDate()+i); out.push(isoDe(x));} return out;}
-function fmtDataLonga(iso){const DS=['domingo','segunda','terça','quarta','quinta','sexta','sábado']; const d=new Date(iso+'T00:00:00'); const p=iso.split('-'); return `${DS[d.getDay()]}, ${p[2]}/${p[1]}`;}
-function renderAgenda(){
-  const week=document.getElementById('agWeek'), lista=document.getElementById('agLista'), resumo=document.getElementById('agResumo');
-  if(!week||!lista) return;
-  const dias=semanaDe(agSelDate), abbr=['seg','ter','qua','qui','sex','sáb','dom'];
-  week.innerHTML=dias.map((d,i)=>{
-    const cnt=(DB.agenda||[]).filter(a=>a.data===d).length;
-    return `<button class="ag-day ${d===agSelDate?'sel':''}" onclick="agSelDate='${d}';renderAgenda()"><span class="dow">${abbr[i]}</span><span class="num">${d.split('-')[2]}</span>${cnt?`<span class="dot">${cnt}</span>`:''}</button>`;
-  }).join('');
-  const doDia=(DB.agenda||[]).filter(a=>a.data===agSelDate).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
-  if(resumo) resumo.textContent=`${fmtDataLonga(agSelDate)} · ${doDia.length} ${doDia.length===1?'consulta':'consultas'}`;
-  if(!doDia.length){lista.innerHTML='<p class="ref" style="margin-top:10px">Nenhuma consulta neste dia. Toque em "Novo agendamento".</p>';return;}
-  lista.innerHTML='';
-  doDia.forEach(a=>{
-    const idx=DB.agenda.indexOf(a), cor=CORST[a.status]||'#5b6b7b';
-    const div=document.createElement('div'); div.className='ag-item'; div.onclick=()=>openAgendaForm(idx);
-    div.innerHTML=`<div class="ag-hora">${a.hora||'--:--'}</div><div class="ag-bar" style="background:${cor}"></div>
-      <div class="ag-info"><div class="ag-nome">${escTxt(a.paciente)||'(sem nome)'}</div><div class="ag-tipo">${escTxt(a.obs)||''}</div></div>
-      <span class="ag-status" style="color:${cor};border-color:${cor}">${a.status||''}</span>`;
-    lista.appendChild(div);
-  });
-}
-function openAgendaForm(idx){
-  const a = idx!=null ? DB.agenda[idx] : {data:agSelDate,hora:'',paciente:nomePacienteAtual(),status:'Agendado',obs:''};
-  abrirModal(`<h3>${idx!=null?'Editar':'Novo'} agendamento</h3>
-    <div class="grid g2">
-      <label class="field">Data<input type="date" id="m_data" value="${a.data||''}"></label>
-      <label class="field">Hora<input type="time" id="m_hora" value="${a.hora||''}"></label>
-    </div>
-    <label class="field" style="margin-top:8px">Paciente<input id="m_pac" value="${escAttr(a.paciente)}"></label>
-    <label class="field" style="margin-top:8px">Tipo / observação<input id="m_obs" value="${escAttr(a.obs)}" placeholder="Ex.: Sessão · joelho"></label>
-    <label class="field" style="margin-top:8px">Status<select id="m_status">${['Agendado','Confirmado','Atendido','Faltou','Cancelado'].map(o=>`<option ${a.status===o?'selected':''}>${o}</option>`).join('')}</select></label>
-    <div class="modal-actions">
-      ${idx!=null?`<button class="del" onclick="if(confirm('Excluir este agendamento?')){DB.agenda.splice(${idx},1);persistDB();fecharModal();renderAgenda();}">Excluir</button>`:''}
-      <button onclick="fecharModal()">Cancelar</button>
-      <button onclick="salvarAgenda(${idx})">Salvar</button>
-    </div>`);
-}
-function salvarAgenda(idx){
-  const o={data:getId('m_data'),hora:getId('m_hora'),paciente:getId('m_pac'),obs:getId('m_obs'),status:getId('m_status')};
-  DB.agenda=DB.agenda||[];
-  if(idx!=null) DB.agenda[idx]=o; else DB.agenda.push(o);
-  if(o.data) agSelDate=o.data;
-  persistDB(); fecharModal(); renderAgenda();
-}
-
-/* --- Financeiro --- */
-function mudarMesFin(d){const [y,m]=finMes.split('-').map(Number); const dt=new Date(y,m-1+d,1); finMes=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); renderFinanceiro();}
-function finChartSVG(){
-  let [y,m]=finMes.split('-').map(Number);
-  const meses=[]; for(let i=5;i>=0;i--){const dt=new Date(y,m-1-i,1); meses.push({k:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'), lbl:MESES[dt.getMonth()].slice(0,3)});}
-  const dd=meses.map(o=>{let e=0,s=0;(DB.financeiro||[]).forEach(f=>{if((f.data||'').slice(0,7)===o.k){const v=parseFloat(f.valor)||0; if(f.tipo==='Saída')s+=v; else e+=v;}});return {lbl:o.lbl,e,s};});
-  const max=Math.max(1,...dd.map(d=>Math.max(d.e,d.s)));
-  const W=440,H=130,pad=20,bottom=H-22,top=12,gw=(W-pad*2)/6;
-  let bars='';
-  dd.forEach((d,i)=>{
-    const gx=pad+i*gw, eH=(d.e/max)*(bottom-top), sH=(d.s/max)*(bottom-top), bw=12, gap=4;
-    bars+=`<rect x="${(gx+gw/2-bw-gap/2).toFixed(1)}" y="${(bottom-eH).toFixed(1)}" width="${bw}" height="${eH.toFixed(1)}" rx="2" fill="#1b7f4b"/>`;
-    bars+=`<rect x="${(gx+gw/2+gap/2).toFixed(1)}" y="${(bottom-sH).toFixed(1)}" width="${bw}" height="${sH.toFixed(1)}" rx="2" fill="#b3261e"/>`;
-    bars+=`<text x="${(gx+gw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="#5b6b7b">${d.lbl}</text>`;
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><line x1="${pad}" y1="${bottom}" x2="${W-pad}" y2="${bottom}" stroke="#e2e9f0"/>${bars}<g font-size="10" fill="#5b6b7b"><rect x="${pad}" y="2" width="9" height="9" rx="2" fill="#1b7f4b"/><text x="${pad+13}" y="10">entradas</text><rect x="${pad+78}" y="2" width="9" height="9" rx="2" fill="#b3261e"/><text x="${pad+91}" y="10">saídas</text></g></svg>`;
-}
-function renderFinanceiro(){
-  const resumo=document.getElementById('finResumo'), cont=document.getElementById('finLista'), chart=document.getElementById('finChart'), lbl=document.getElementById('finMesLabel');
-  if(!resumo||!cont) return;
-  const [y,m]=finMes.split('-').map(Number);
-  if(lbl) lbl.textContent=`${MESES[m-1]} ${y}`;
-  let lista=(DB.financeiro||[]).filter(f=>(f.data||'').slice(0,7)===finMes);
-  let ent=0,sai=0,areceber=0;
-  lista.forEach(f=>{const v=parseFloat(f.valor)||0; if(f.tipo==='Saída')sai+=v; else {ent+=v; if(f.status==='Pendente')areceber+=v;}});
-  const saldo=ent-sai;
-  resumo.innerHTML=`
-    <div class="fin-card2"><div class="lbl">Entradas</div><div class="val" style="color:var(--verde)">${moeda(ent)}</div></div>
-    <div class="fin-card2"><div class="lbl">Saídas</div><div class="val" style="color:var(--vermelho)">${moeda(sai)}</div></div>
-    <div class="fin-card2"><div class="lbl">Saldo</div><div class="val" style="color:${saldo>=0?'var(--azul)':'var(--vermelho)'}">${moeda(saldo)}</div></div>
-    <div class="fin-card2"><div class="lbl">A receber</div><div class="val" style="color:var(--amarelo)">${moeda(areceber)}</div></div>`;
-  if(chart) chart.innerHTML=finChartSVG();
-  lista.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-  if(!lista.length){cont.innerHTML='<p class="ref">Nenhum lançamento neste mês.</p>';return;}
-  cont.innerHTML='';
-  lista.forEach(f=>{
-    const idx=DB.financeiro.indexOf(f), ent2=f.tipo!=='Saída', cor=ent2?'var(--verde)':'var(--vermelho)', bg=ent2?'#e6f4ec':'#fdeceb';
-    const div=document.createElement('div'); div.className='fin-tx'; div.onclick=()=>openFinForm(idx);
-    div.innerHTML=`<div class="fin-ic" style="background:${bg};color:${cor}">${ent2?'↑':'↓'}</div>
-      <div class="fin-txinfo"><div class="fin-txdesc">${escTxt(f.desc)||'Lançamento'}${f.paciente?' · '+escTxt(f.paciente):''}</div>
-        <div class="fin-txsub">${fmtData(f.data)} · ${escTxt(f.forma)||'—'} ${f.status==='Pendente'?'<span class="badge b-yellow" style="font-size:10px;padding:1px 6px">pendente</span>':''}</div></div>
-      <div class="fin-val" style="color:${cor}">${ent2?'+':'−'} ${moeda(Math.abs(parseFloat(f.valor)||0))}</div>`;
-    cont.appendChild(div);
-  });
-}
-function openFinForm(idx){
-  const f = idx!=null ? DB.financeiro[idx] : {data:hojeISO(),tipo:'Entrada',valor:'',status:'Pago',desc:'Atendimento',categoria:'',forma:'PIX',paciente:nomePacienteAtual()};
-  abrirModal(`<h3>${idx!=null?'Editar':'Novo'} lançamento</h3>
-    <div class="grid g2">
-      <label class="field">Data<input type="date" id="f_data" value="${f.data||''}"></label>
-      <label class="field">Tipo<select id="f_tipo">${['Entrada','Saída'].map(o=>`<option ${f.tipo===o?'selected':''}>${o}</option>`).join('')}</select></label>
-      <label class="field">Valor (R$)<input type="number" step="0.01" id="f_valor" value="${f.valor||''}"></label>
-      <label class="field">Status<select id="f_status">${['Pago','Pendente'].map(o=>`<option ${f.status===o?'selected':''}>${o}</option>`).join('')}</select></label>
-    </div>
-    <label class="field" style="margin-top:8px">Descrição<input id="f_desc" value="${escAttr(f.desc)}"></label>
-    <div class="grid g2" style="margin-top:8px">
-      <label class="field">Categoria<input id="f_cat" value="${escAttr(f.categoria)}" placeholder="Ex.: consulta, aluguel"></label>
-      <label class="field">Forma<select id="f_forma">${['','PIX','Dinheiro','Cartão débito','Cartão crédito','Transferência','Boleto'].map(o=>`<option ${f.forma===o?'selected':''}>${o}</option>`).join('')}</select></label>
-    </div>
-    <label class="field" style="margin-top:8px">Paciente (opcional)<input id="f_pac" value="${escAttr(f.paciente)}"></label>
-    <div class="modal-actions">
-      ${idx!=null?`<button class="del" onclick="if(confirm('Excluir este lançamento?')){DB.financeiro.splice(${idx},1);persistDB();fecharModal();renderFinanceiro();}">Excluir</button>`:''}
-      <button onclick="fecharModal()">Cancelar</button>
-      <button onclick="salvarFin(${idx})">Salvar</button>
-    </div>`);
-}
-function salvarFin(idx){
-  const o={data:getId('f_data'),tipo:getId('f_tipo'),valor:getId('f_valor'),status:getId('f_status'),desc:getId('f_desc'),categoria:getId('f_cat'),forma:getId('f_forma'),paciente:getId('f_pac')};
-  DB.financeiro=DB.financeiro||[];
-  if(idx!=null) DB.financeiro[idx]=o; else DB.financeiro.push(o);
-  if(o.data) finMes=o.data.slice(0,7);
-  persistDB(); fecharModal(); renderFinanceiro();
-}
-
-/* ====================== MAPA CORPORAL DE DOR ====================== */
-const BODY_SVG=`<svg viewBox="0 0 120 320" xmlns="http://www.w3.org/2000/svg" style="pointer-events:none">
-<g fill="#dce8f3" stroke="#1769aa" stroke-width="2" stroke-linejoin="round">
-<ellipse cx="60" cy="26" rx="17" ry="20"/>
-<rect x="52" y="42" width="16" height="14"/>
-<path d="M34,58 Q60,50 86,58 L80,152 Q60,162 40,152 Z"/>
-<rect x="16" y="60" width="15" height="94" rx="7.5" transform="rotate(7 23 107)"/>
-<rect x="89" y="60" width="15" height="94" rx="7.5" transform="rotate(-7 97 107)"/>
-<ellipse cx="20" cy="160" rx="8" ry="10"/>
-<ellipse cx="100" cy="160" rx="8" ry="10"/>
-<path d="M40,150 L80,150 L83,182 Q60,190 37,182 Z"/>
-<rect x="41" y="180" width="17" height="118" rx="8"/>
-<rect x="62" y="180" width="17" height="118" rx="8"/>
-<ellipse cx="49" cy="305" rx="11" ry="8"/>
-<ellipse cx="71" cy="305" rx="11" ry="8"/>
-</g></svg>`;
-function initMapaDor(){
-  ['bm_ant','bm_post'].forEach(id=>{const el=document.getElementById(id); if(el&&!el.querySelector('svg')) el.insertAdjacentHTML('afterbegin', BODY_SVG);});
-}
-function corDor(i){const h=120-((Math.max(1,Math.min(10,i))-1)/9)*120;return `hsl(${h},75%,45%)`;}
-function addPonto(e){
-  const c=e.currentTarget; const view=c.id==='bm_ant'?'ant':'post';
-  const r=c.getBoundingClientRect();
-  const x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
-  if(x<0||x>100||y<0||y>100) return;
-  dados.mapaDor.push({view, x:+x.toFixed(1), y:+y.toFixed(1), i:1});
-  renderMapaDor(); salvar(true);
-}
-function cyclePonto(idx,e){
-  e.stopPropagation();
-  const p=dados.mapaDor[idx]; if(!p) return;
-  p.i++; if(p.i>10) dados.mapaDor.splice(idx,1);
-  renderMapaDor(); salvar(true);
-}
-function limparMapaDor(){
-  if(!dados.mapaDor.length) return;
-  if(confirm('Remover todos os pontos de dor marcados?')){dados.mapaDor=[];renderMapaDor();salvar(true);}
-}
-function renderMapaDor(){
-  ['bm_ant','bm_post'].forEach(id=>{const el=document.getElementById(id); if(el) el.querySelectorAll('.pain-dot').forEach(d=>d.remove());});
-  (dados.mapaDor||[]).forEach((p,idx)=>{
-    const c=document.getElementById(p.view==='ant'?'bm_ant':'bm_post'); if(!c) return;
-    const d=document.createElement('div'); d.className='pain-dot';
-    d.style.left=p.x+'%'; d.style.top=p.y+'%'; d.style.background=corDor(p.i);
-    d.textContent=p.i; d.title='Intensidade '+p.i+'/10 — clique para alterar';
-    d.onclick=(e)=>cyclePonto(idx,e);
-    c.appendChild(d);
-  });
-  const pc=document.getElementById('painCount'); if(pc) pc.textContent=(dados.mapaDor||[]).length;
-}
-
-/* ====================== GRÁFICO DE EVOLUÇÃO (EVA) + MCID ====================== */
-function renderGrafico(){
-  const g=document.getElementById('grafico'), res=document.getElementById('mcidResumo');
-  if(!g) return;
-  const pts=(dados.sessoes||[]).map((s,i)=>({i, eva:parseFloat(s.eva), data:s.data})).filter(p=>!isNaN(p.eva));
-  if(pts.length<1){g.innerHTML='<p class="ref">Sem dados de EVA nas sessões ainda.</p>'; if(res) res.innerHTML=''; return;}
-  const W=660,H=240,ml=34,mr=16,mt=14,mb=34,pw=W-ml-mr,ph=H-mt-mb;
-  const n=pts.length;
-  const X=i=> n<=1? ml+pw/2 : ml+(i/(n-1))*pw;
-  const Y=v=> mt+((10-v)/10)*ph;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  // faixa MCID a partir da dor inicial
-  const base=pts[0].eva, b1=Y(base), b2=Y(Math.max(0,base-2));
-  svg+=`<rect x="${ml}" y="${Math.min(b1,b2)}" width="${pw}" height="${Math.abs(b2-b1)}" fill="#1b7f4b" opacity="0.10"/>`;
-  svg+=`<line x1="${ml}" y1="${b1}" x2="${ml+pw}" y2="${b1}" stroke="#1b7f4b" stroke-dasharray="4 3" stroke-width="1" opacity="0.5"/>`;
-  // grade + eixo Y
-  for(let v=0;v<=10;v+=2){const y=Y(v);svg+=`<line x1="${ml}" y1="${y}" x2="${ml+pw}" y2="${y}" stroke="#e2e9f0" stroke-width="1"/><text x="${ml-6}" y="${y+3}" text-anchor="end" font-size="10" fill="#5b6b7b">${v}</text>`;}
-  // linha
-  const poly=pts.map(p=>`${X(p.i)},${Y(p.eva)}`).join(' ');
-  svg+=`<polyline points="${poly}" fill="none" stroke="#0f4c81" stroke-width="2.5"/>`;
-  // pontos + rótulos + eixo X
-  pts.forEach((p,k)=>{
-    const x=X(p.i),y=Y(p.eva);
-    svg+=`<circle cx="${x}" cy="${y}" r="4.5" fill="${corDor(p.eva)}" stroke="#fff" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#1b2733">${p.eva}</text>`;
-    const lbl=p.data?p.data.split('-').reverse().slice(0,2).join('/'):('S'+(p.i+1));
-    svg+=`<text x="${x}" y="${H-12}" text-anchor="middle" font-size="9" fill="#5b6b7b">${lbl}</text>`;
-  });
-  svg+=`<text x="${ml-26}" y="${mt+ph/2}" transform="rotate(-90 ${ml-26} ${mt+ph/2})" text-anchor="middle" font-size="10" fill="#5b6b7b">EVA</text>`;
-  svg+=`</svg>`;
-  g.innerHTML=svg;
-  // resumo MCID
-  if(res){
-    if(pts.length<2){res.innerHTML='<div class="ref">Registre ao menos 2 sessões com EVA para avaliar a MCID.</div>'; return;}
-    const ini=pts[0].eva, fim=pts[pts.length-1].eva, dif=ini-fim;
-    let cls,txt;
-    if(dif>=2){cls='b-green';txt=`Redução de ${dif.toFixed(1)} ponto(s) — melhora clinicamente importante (≥ MCID de 2).`;}
-    else if(dif<=-2){cls='b-red';txt=`Aumento de ${(-dif).toFixed(1)} ponto(s) — piora clinicamente importante.`;}
-    else {cls='b-yellow';txt=`Variação de ${dif.toFixed(1)} ponto(s) — abaixo da MCID (2); pode não ser clinicamente relevante.`;}
-    res.innerHTML=`<span class="scale-score">EVA inicial ${ini} → atual ${fim}</span> <span class="badge ${cls}" style="margin-left:8px">${txt}</span>`;
-  }
-}
-
-/* ====================== CLÍNICA + IMPRESSÃO ====================== */
-function getId(id){const e=document.getElementById(id);return e?e.value:'';}
-function getK(k){const e=document.querySelector(`[data-k="${k}"]`);return e?e.value:'';}
-function carregarClinica(){
-  DB.clinica=DB.clinica||{}; const c=DB.clinica;
-  const n=document.getElementById('cl_nome'); if(n) n.value=c.nome||'';
-  const ct=document.getElementById('cl_contato'); if(ct) ct.value=c.contato||'';
-  const a=document.getElementById('cl_assinatura'); if(a) a.value=c.assinatura||'';
-  const prev=document.getElementById('cl_logo_prev'), rm=document.getElementById('cl_logo_rm');
-  if(c.logo&&prev){prev.src=c.logo; prev.style.display='inline-block'; if(rm) rm.style.display='inline-block';}
-}
-function salvarClinica(){
-  DB.clinica=DB.clinica||{};
-  DB.clinica.nome=getId('cl_nome'); DB.clinica.contato=getId('cl_contato'); DB.clinica.assinatura=getId('cl_assinatura');
-  persistDB();
-}
-function carregarLogo(e){
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{DB.clinica=DB.clinica||{}; DB.clinica.logo=r.result; persistDB(); carregarClinica(); flash('Logotipo salvo');};
-  r.readAsDataURL(f);
-}
-function removerLogo(){
-  DB.clinica=DB.clinica||{}; delete DB.clinica.logo; persistDB();
-  const prev=document.getElementById('cl_logo_prev'), rm=document.getElementById('cl_logo_rm');
-  if(prev) prev.style.display='none'; if(rm) rm.style.display='none';
-}
-function marcarVazios(on){
-  document.querySelectorAll('main label.field').forEach(l=>{
-    const ctrl=l.querySelector('input,textarea,select'); if(!ctrl) return;
-    const vazio = ctrl.type==='checkbox' ? !ctrl.checked : !(''+ctrl.value).trim();
-    l.classList.toggle('hide-print', on&&vazio);
-  });
-  document.querySelectorAll('main table tr').forEach(tr=>{
-    const ctrls=[...tr.querySelectorAll('input,select,textarea')]; if(!ctrls.length) return;
-    const allEmpty=ctrls.every(c=> c.type==='checkbox' ? !c.checked : !(''+c.value).trim());
-    tr.classList.toggle('hide-print', on&&allEmpty);
-  });
-}
-function imprimir(resumo){
-  salvar(true);
-  const c=DB.clinica||{};
-  const logo=document.getElementById('printLogo');
-  if(c.logo){logo.src=c.logo; logo.style.display='block';} else {logo.style.display='none';}
-  document.getElementById('phClinic').textContent=c.nome||'';
-  document.getElementById('phContato').textContent=c.contato||'';
-  const dataAv=getK('id_data');
-  document.getElementById('phMeta').innerHTML=`<b>Paciente:</b> ${getK('id_nome')||'—'}<br><b>Data:</b> ${dataAv?dataAv.split('-').reverse().join('/'):''}`;
-  document.getElementById('phAssinatura').textContent=c.assinatura||getK('id_fisio')||'';
-  marcarVazios(!!resumo);
-  window.print();
-  setTimeout(()=>marcarVazios(false),600);
-}
-
-/* ====================== EXPORT / IMPORT ====================== */
-function baixar(obj,nomeArq){
-  const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=nomeArq; a.click();
-}
-function exportarJSON(){ // ficha do paciente atual
-  salvar(true);
-  const nome=(dados.campos.id_nome||'paciente').replace(/[^a-zA-Z0-9]/g,'_');
-  baixar(dados, `ficha_${nome}.json`);
-}
-function exportarBackup(){ // todos os pacientes
-  salvar(true);
-  baixar(DB, `backup_fichas_${hojeISO()}.json`);
-}
-function importarJSON(e){
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{try{
-    const obj=JSON.parse(r.result);
-    if(obj.pacientes){ // backup geral
-      if(!confirm('Importar BACKUP GERAL? Isso substituirá TODOS os pacientes atuais deste navegador.')){e.target.value='';return;}
-      DB=obj; if(!DB.atualId||!DB.pacientes.find(p=>p.id===DB.atualId)) DB.atualId=(DB.pacientes[0]||{}).id;
-    } else if(obj.campos){ // ficha única -> novo paciente
-      const p=criarRegistro(obj.campos.id_nome||'Paciente importado', obj); DB.atualId=p.id;
-      flash('Ficha importada como novo paciente');
-    } else { alert('Arquivo não reconhecido.'); e.target.value=''; return; }
-    persistDB(); location.reload();
-  }catch(err){alert('Arquivo inválido');}};
-  r.readAsText(f);
-}
-function limparTudo(){
-  if(confirm('Limpar TODOS os campos da ficha do paciente atual? (o cadastro do paciente é mantido; as demais fichas não são afetadas.)')){
-    dados=novaFicha(); const p=pacienteAtual(); if(p){p.dados=dados;} persistDB();
-    aplicarFichaNaUI(); atualizarSeletorPacientes(); flash('Ficha limpa');
-  }
-}
-
-/* ====================== BIND ====================== */
-function bindCampos(){
-  document.querySelectorAll('[data-k]').forEach(el=>{
-    if(el._bound) return; el._bound=true;
-    const ev = (el.tagName==='SELECT'||el.type==='checkbox'||el.type==='date')?'change':'input';
-    el.addEventListener(ev,()=>salvar(true));
-  });
-}
-
-/* ====================== CANCELAR ASSINATURA ====================== */
-function cancelarAssinatura(){
-  const sb=window._sb;
-  if(!sb){ alert('O cancelamento funciona no app publicado (com login ativo).'); return; }
-  if(!confirm('Cancelar sua assinatura? Você continua com acesso até o fim do período já pago.')) return;
-  sb.auth.getSession().then(({data})=>{
-    const token=data.session&&data.session.access_token;
-    if(!token){ alert('Entre novamente para cancelar.'); return; }
-    fetch(window.SUPA_URL+'/functions/v1/cancelar-assinatura',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'}})
-      .then(r=>{
-        if(!r.ok) return r.text().then(t=>{throw new Error('HTTP '+r.status+': '+t.slice(0,200));});
-        return r.json();
-      }).then(j=>{
-        if(j&&j.ok) alert(j.canceladas>0?'Assinatura cancelada. Seu acesso continua até o fim do período já pago. 💙':'Não encontramos uma assinatura ativa nesta conta.');
-        else alert('Erro: '+(j&&j.erro?j.erro:'resposta inesperada'));
-      }).catch(e=>alert('Erro: '+e.message));
-  });
-}
-
-/* ====================== ENVIAR PRÉ-ANAMNESE ====================== */
-function enviarPreAnamnese(){
-  let meuTel=(localStorage.getItem('fisio_whats')||'').replace(/\D/g,'');
-  if(!meuTel){
-    const n=prompt('Digite seu WhatsApp com DDD (só números):\nEx: 27998904164\n\nSó precisa fazer isso uma vez.');
-    if(!n) return;
-    meuTel=n.replace(/\D/g,'');
-    localStorage.setItem('fisio_whats',meuTel);
-  }
-  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+meuTel;
-  const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
-  abrirModal(`<h3>📤 Pré-anamnese — enviar ao paciente</h3>
-    <div class="legend">Copie a mensagem abaixo e cole no WhatsApp do paciente:</div>
-    <textarea id="msgPreA" style="width:100%;min-height:110px;font-size:14px" readonly>${msg}</textarea>
-    <div class="modal-actions">
-      <button onclick="fecharModal()">Fechar</button>
-      <button style="background:var(--azul);color:#fff" onclick="navigator.clipboard.writeText(document.getElementById('msgPreA').value).then(()=>{flash('Mensagem copiada!');fecharModal();})">📋 Copiar mensagem</button>
-    </div>`);
-}
-
-/* ====================== IMPORTAR PRÉ-ANAMNESE ====================== */
-function importarPreAnamnese(){
-  abrirModal(`<h3>Importar pré-anamnese</h3>
-    <div class="legend">Cole abaixo a mensagem (ou o código <b>FICHA::...</b>) que o paciente te enviou pelo WhatsApp.</div>
-    <textarea id="imp_txt" style="width:100%;min-height:120px"></textarea>
-    <div class="modal-actions"><button onclick="fecharModal()">Cancelar</button><button style="background:var(--azul);color:#fff" onclick="fazerImportPre()">Importar</button></div>`);
-}
-function fazerImportPre(){
-  const txt=getId('imp_txt')||'';
-  const m=txt.match(/FICHA::([A-Za-z0-9+/=]+)/);
-  if(!m){ alert('Não encontrei um código válido. Copie a mensagem que o paciente enviou (incluindo o trecho "Código: FICHA::...").'); return; }
-  let obj;
-  try{ obj=JSON.parse(decodeURIComponent(escape(atob(m[1])))); }catch(e){ alert('Código inválido ou incompleto.'); return; }
-  salvar(true);
-  const nome=obj.id_nome||'Paciente importado';
-  const p=criarRegistro(nome);
-  p.dados.campos=Object.assign({}, obj);
-  p.dados.campos.id_data=hojeISO();
-  DB.atualId=p.id;
-  dados=Object.assign(novaFicha(), p.dados);
-  persistDB();
-  fecharModal();
-  aplicarFichaNaUI();
-  atualizarSeletorPacientes();
-  flash('Pré-anamnese importada: '+nome);
-}
-
-/* ====================== INIT ====================== */
-carregarDB();
-initTabs();
-initRedFlags();
-initRegioes();
-initEscalas();
-renderSessoes();
-renderImagens();
-initMapaDor();
-renderMapaDor();
-renderGrafico();
-restaurarCampos();
-bindCampos();
-atualizarSeletorPacientes();
-carregarClinica();
-window.addEventListener('afterprint',()=>marcarVazios(false));
-
-// Idade automática a partir da data de nascimento
-const _nasc=document.querySelector('[data-k="id_nasc"]');
-if(_nasc) _nasc.addEventListener('change',()=>{
-  const v=_nasc.value; if(!v) return;
-  const d=new Date(v), t=new Date(); let a=t.getFullYear()-d.getFullYear();
-  const m=t.getMonth()-d.getMonth(); if(m<0||(m===0&&t.getDate()<d.getDate())) a--;
-  const idEl=document.querySelector('[data-k="id_idade"]');
-  if(idEl&&a>=0&&a<130){idEl.value=a; salvar(true);}
-});
-// Data da avaliação preenchida por padrão (paciente novo sem data)
-const _dataAv=document.querySelector('[data-k="id_data"]');
-if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
-</script>
-<div class="auth-gate" id="authGate" style="display:none">
-  <div class="auth-card">
-    <h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 64 64" width="30" height="30" style="flex:none" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="15" fill="#0f4c81"/><circle cx="32" cy="19" r="5.5" fill="#fff"/><path d="M32 25 C27 29 23 29 19 26 M32 25 C37 27 43 26 47 22 M32 25 L32 39 L25 51 M32 39 L40 50" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 48 Q32 39 50 48" fill="none" stroke="#6fa8d4" stroke-width="2.4" stroke-linecap="round"/></svg>Ficha Fisio</h2>
-    <p class="sub" id="authSub">Entre para acessar sua ficha de avaliação.</p>
-    <label>E-mail</label><input type="email" id="authEmail" autocomplete="email">
-    <label>Senha</label><input type="password" id="authPass" autocomplete="current-password">
-    <button class="primary" id="authBtn" onclick="authPrincipal()">Entrar</button>
-    <div class="auth-msg" id="authMsg"></div>
-    <div class="auth-links">
-      <a id="authToggle" onclick="authAlternar()">Criar conta</a>
-      <a onclick="authReset()">Esqueci a senha</a>
-    </div>
-  </div>
-</div>
-
-<div class="auth-gate" id="payGate" style="display:none">
-  <div class="auth-card" style="max-width:420px">
-    <h2>Assine a Ficha Fisio</h2>
-    <p class="sub">Avaliação de qualidade, baseada em evidência — tudo num só lugar.</p>
-    <ul class="sell-list">
-      <li><span class="ck">✓</span>+30 escalas validadas com cálculo automático</li>
-      <li><span class="ck">✓</span>Testes especiais por articulação (com imagens e vídeos)</li>
-      <li><span class="ck">✓</span>Mapa de dor, evolução e relatório em PDF</li>
-      <li><span class="ck">✓</span>Agenda e controle financeiro</li>
-      <li><span class="ck">✓</span>Funciona no celular e no computador</li>
-    </ul>
-    <div class="sell-price"><span id="payPreco">R$ 14,90</span><small> acesso vitalício</small></div>
-    <button class="primary" onclick="assinar()">Comprar acesso</button>
-    <p class="sell-sec">🔒 Pagamento seguro via Hotmart · PIX · Cartão</p>
-    <div class="pay-email" id="payEmail"></div>
-    <div class="auth-msg" id="payMsg"></div>
-    <p style="font-size:0.78rem;color:#aaa;margin-top:8px">Acabou de comprar? Clique em <b>Sair</b> abaixo e depois use <b>Esqueci a senha</b> na tela de login para definir sua senha de acesso.</p>
-    <div class="auth-links">
-      <a onclick="recheckAssinatura()">Já paguei — atualizar</a>
-      <a onclick="authSair()">Sair</a>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ===== Login + assinatura (Supabase) — Modelo 1: paywall ===== */
-(function(){
-  const $=id=>document.getElementById(id);
-  const gate=$('authGate'), pg=$('payGate');
-  let modo='login';
-  function msg(t,ok){const m=$('authMsg'); if(m){m.textContent=t; m.className='auth-msg '+(ok?'ok':'err');}}
-  function telas(estado){
-    if(gate) gate.style.display = estado==='login'?'flex':'none';
-    if(pg) pg.style.display = estado==='pay'?'flex':'none';
-    document.documentElement.classList.toggle('locked', estado!=='app');
-    const s=$('btnSair'); if(s) s.style.display = estado==='app'?'':'none';
-  }
-  if(!window.AUTH_ATIVO){ telas('app'); return; }   // login desligado → abre normal
-  telas('login');                                   // garante que nunca fica em branco
-  { const pp=$('payPreco'); if(pp&&window.PAY_PRECO) pp.textContent=window.PAY_PRECO; }
-  if(!window.supabase){ msg('Não foi possível carregar o login. Verifique a internet e recarregue a página.'); return; }
-  let sb;
-  function comTimeout(p,ms){return Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado — tente novamente.')), ms||15000))]);}
-  try{ sb=window.supabase.createClient(window.SUPA_URL, window.SUPA_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, lock: async (n,t,fn)=> await fn() } }); }
-  catch(e){ msg('Erro ao iniciar o login: '+(e.message||e)); return; }
-  window._sb=sb;
-  function lerCache(uid){try{const v=JSON.parse(localStorage.getItem('fisio_assin_'+uid)); if(v && (Date.now()-v.ts)<86400000) return v.ativo;}catch(e){} return null;}
-  function gravarCache(uid,ativo){try{localStorage.setItem('fisio_assin_'+uid,JSON.stringify({ativo:!!ativo,ts:Date.now()}));}catch(e){}}
-  async function checarAcesso(session){
-    if(!session){ telas('login'); return; }
-    const uid=session.user.id;
-    const cached=lerCache(uid);
-    if(cached!==null) telas(cached?'app':'pay');   // mostra na hora pelo cache, verifica em segundo plano
-    try{
-      const {data,error}=await comTimeout(sb.from('assinantes').select('status,validade').eq('id',uid).maybeSingle());
-      if(error) throw error;
-      const ativo = !!(data && data.status==='ativo' && (!data.validade || new Date(data.validade) >= new Date()));
-      gravarCache(uid,ativo);
-      telas(ativo?'app':'pay');
-      if(!ativo){
-        const pm=$('payMsg'); if(pm){pm.textContent='Esta conta ainda não tem uma assinatura ativa.'; pm.className='auth-msg err';}
-        const pe=$('payEmail'); if(pe){pe.innerHTML='⚠️ Na hora de pagar, use o e-mail desta conta:<br><b>'+(session.user.email||'')+'</b>'; pe.classList.add('show');}
-      }
-    }catch(e){ if(cached===null){ telas('pay'); const pm=$('payMsg'); if(pm){pm.textContent='Não consegui verificar a assinatura. Já rodou o SQL da tabela no Supabase? ('+(e.message||e)+')'; pm.className='auth-msg err';} } }
-  }
-  window.authAlternar=function(){
-    modo = modo==='login'?'signup':'login';
-    $('authBtn').textContent = modo==='login'?'Entrar':'Criar conta';
-    $('authToggle').textContent = modo==='login'?'Criar conta':'Já tenho conta';
-    $('authSub').textContent = modo==='login'?'Entre para acessar sua ficha de avaliação.':'Crie sua conta para começar.';
-    $('authMsg').className='auth-msg';
-  };
-  window.authPrincipal=async function(){
-    const email=$('authEmail').value.trim(), pass=$('authPass').value;
-    if(!email||!pass){msg('Preencha e-mail e senha.');return;}
-    const btn=$('authBtn'); const txt=btn.textContent; btn.disabled=true; btn.textContent='Aguarde...';
-    try{
-      if(modo==='login'){
-        const {error}=await comTimeout(sb.auth.signInWithPassword({email,password:pass}));
-        if(error){
-          const em=typeof error.message==='string'&&error.message&&error.message!=='{}'?error.message:'E-mail ou senha incorretos. Se você acabou de comprar, clique em "Esqueci a senha" para configurar sua senha.';
-          msg(em);
-        }
-      }else{
-        const {data,error}=await comTimeout(sb.auth.signUp({email,password:pass}));
-        if(error){
-          const em=typeof error.message==='string'?error.message:'';
-          if(em&&(em.toLowerCase().includes('already')||em.toLowerCase().includes('registered')||em.toLowerCase().includes('cadastrado'))){
-            msg('Este e-mail já tem uma conta. Use "Esqueci a senha" para definir sua senha e entrar.',false);
-          } else { msg(em&&em!=='{}'?em:'Erro ao criar conta. Tente novamente.'); }
-        } else if(!data.session) msg('Conta criada! Se você acabou de comprar, clique em "Esqueci a senha" para configurar sua senha e entrar.',true);
-      }
-    }catch(e){ const em=e&&typeof e.message==='string'&&e.message?e.message:'Erro de conexão. Verifique sua internet e tente novamente.'; msg(em); }
-    btn.disabled=false; btn.textContent=txt;
-  };
-  window.authReset=async function(){
-    const email=$('authEmail').value.trim();
-    if(!email){msg('Digite seu e-mail acima para redefinir a senha.');return;}
-    try{ const {error}=await sb.auth.resetPasswordForEmail(email); msg(error?error.message:'Enviamos um link de redefinição para seu e-mail.', !error); }
-    catch(e){ msg('Erro de conexão.'); }
-  };
-  window.authSair=async function(){
-    try{ const {data}=await sb.auth.getSession(); if(data?.session?.user?.id) localStorage.removeItem('fisio_assin_'+data.session.user.id); }catch(e){}
-    telas('login');
-    sb.auth.signOut().catch(()=>{});
-  };
-  window.recheckAssinatura=async function(){
-    const pm=$('payMsg'); if(pm){ pm.textContent='Verificando assinatura...'; pm.className='auth-msg ok'; }
-    try{ const {data}=await sb.auth.getSession(); await checarAcesso(data.session); }catch(e){ if(pm){ pm.textContent='Erro ao verificar: '+(e.message||e); pm.className='auth-msg err'; } }
-  };
-  window.assinar=function(){ if(window.PAY_URL){ window.open(window.PAY_URL,'_blank'); } else { const m=$('payMsg'); if(m){ m.textContent='Link de pagamento ainda não configurado.'; m.className='auth-msg err'; } } };
-  sb.auth.onAuthStateChange((_e,session)=>checarAcesso(session));
-  sb.auth.getSession().then(({data})=>checarAcesso(data.session)).catch(()=>telas('login'));
-})();
-</script>
-
-<script>
-/* Funcionamento offline (só ativa quando hospedado em site https) */
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
 }
 </script>
 </body>
