@@ -124,10 +124,39 @@
     .btn-hero-login:hover { color: #fff; }
     .btn-pix-avulso {
       display: block; text-align: center; margin-top: 10px;
-      color: #00b1ea; font-size: .8rem; text-decoration: none;
-      transition: opacity .15s;
+      color: #00b1ea; font-size: .8rem; text-decoration: none; cursor: pointer;
+      transition: opacity .15s; background: none; border: none; width: 100%; font-family: inherit;
     }
     .btn-pix-avulso:hover { opacity: .75; }
+    .pix-modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .pix-modal-overlay.open { display: flex; }
+    .pix-modal {
+      background: #fff; border-radius: 16px; padding: 32px 28px; max-width: 360px;
+      width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .pix-modal h3 { margin: 0 0 6px; font-size: 1.1rem; color: #111; }
+    .pix-modal p { margin: 0 0 20px; font-size: .88rem; color: #555; }
+    .pix-modal input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: 1rem; box-sizing: border-box; margin-bottom: 12px;
+      transition: border-color .15s;
+    }
+    .pix-modal input:focus { outline: none; border-color: #00b1ea; }
+    .pix-modal .btn-pix-confirmar {
+      width: 100%; padding: 13px; background: #00b1ea; color: #fff; border: none;
+      border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: background .15s;
+    }
+    .pix-modal .btn-pix-confirmar:hover { background: #009ccc; }
+    .pix-modal .btn-pix-confirmar:disabled { background: #aaa; cursor: default; }
+    .pix-modal-erro { color: #c0392b; font-size: .83rem; margin-top: 8px; display: none; }
+    .pix-modal-fechar {
+      float: right; background: none; border: none; font-size: 1.3rem;
+      cursor: pointer; color: #aaa; margin: -8px -8px 0 0;
+    }
 
     /* phone mockup */
     .hero-visual { display: flex; justify-content: center; }
@@ -1025,7 +1054,7 @@
         <li>Suporte por e-mail</li>
       </ul>
       <a href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=fa726f903e854673abffeadb54cedc01" class="btn-plan btn-plan-outline" id="btn-mensal" target="_blank">Assinar mensal</a>
-      <a href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=216609029-dad04935-3926-458a-b8d0-1cba519c1ae5" class="btn-pix-avulso" target="_blank">Pagar com PIX (mensal, sem renovação automática)</a>
+      <button class="btn-pix-avulso" onclick="abrirModalPix('mensal')">Pagar com PIX (sem renovação automática)</button>
     </div>
 
     <!-- ANUAL -->
@@ -1114,6 +1143,62 @@ function switchFichaTab(el, id) {
     ).join('');
   }
 }
+</script>
+
+<!-- Modal PIX -->
+<div class="pix-modal-overlay" id="pixModal" onclick="fecharModalPix(event)">
+  <div class="pix-modal">
+    <button class="pix-modal-fechar" onclick="fecharModalPix()">×</button>
+    <h3>Pagar com PIX</h3>
+    <p>Informe seu e-mail para receber o acesso após o pagamento.</p>
+    <input type="email" id="pixEmail" placeholder="seu@email.com" />
+    <button class="btn-pix-confirmar" id="pixBtn" onclick="confirmarPix()">Ir para o pagamento →</button>
+    <div class="pix-modal-erro" id="pixErro"></div>
+  </div>
+</div>
+
+<script>
+var _pixPlano = 'mensal';
+function abrirModalPix(plano) {
+  _pixPlano = plano || 'mensal';
+  document.getElementById('pixModal').classList.add('open');
+  document.getElementById('pixEmail').value = '';
+  document.getElementById('pixErro').style.display = 'none';
+  setTimeout(function(){ document.getElementById('pixEmail').focus(); }, 100);
+}
+function fecharModalPix(e) {
+  if (e && e.target !== document.getElementById('pixModal')) return;
+  document.getElementById('pixModal').classList.remove('open');
+}
+async function confirmarPix() {
+  var email = document.getElementById('pixEmail').value.trim();
+  var erro = document.getElementById('pixErro');
+  var btn = document.getElementById('pixBtn');
+  if (!email || !email.includes('@')) {
+    erro.textContent = 'Digite um e-mail válido.';
+    erro.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Aguarde…';
+  erro.style.display = 'none';
+  try {
+    var r = await fetch('https://fdjofjxbfwdwzjuwqpkw.supabase.co/functions/v1/criar-preferencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, plano: _pixPlano })
+    });
+    var data = await r.json();
+    if (!r.ok || !data.init_point) throw new Error(data.error || 'Erro ao gerar link');
+    window.location.href = data.init_point;
+  } catch(err) {
+    erro.textContent = err.message || 'Erro ao conectar. Tente novamente.';
+    erro.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Ir para o pagamento →';
+  }
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') fecharModalPix(); });
 </script>
 </body>
 </html>
