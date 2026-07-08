@@ -1160,7 +1160,7 @@ function switchFichaTab(el, id) {
 <script>
 // Se chegou com token de autenticação (ex: link de recuperação de senha), redireciona pro app
 if (window.location.hash && window.location.hash.includes('access_token=')) {
-  window.location.replace('/app/' + window.location.hash);
+  window.location.replace('https://fichafisio.com.br/app/' + window.location.hash);
 }
 var _pixPlano = 'mensal';
 function abrirModalPix(plano) {
