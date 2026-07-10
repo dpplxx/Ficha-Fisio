@@ -1939,8 +1939,16 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   window.authReset=async function(){
     const email=$('authEmail').value.trim();
     if(!email){msg('Digite seu e-mail acima para redefinir a senha.');return;}
-    try{ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://fichafisio.com.br/app/'}); msg(error?error.message:'Enviamos um link de redefinição para seu e-mail.', !error); }
-    catch(e){ msg('Erro de conexão.'); }
+    try{
+      const res=await comTimeout(fetch('https://fdjofjxbfwdwzjuwqpkw.supabase.co/functions/v1/send-reset',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':window.SUPA_ANON},
+        body:JSON.stringify({email})
+      }));
+      const data=await res.json();
+      if(!res.ok||data.error) throw new Error(data.error||'Erro ao enviar e-mail.');
+      msg('Enviamos um link de redefinição para seu e-mail.', true);
+    }catch(e){ msg(e.message||'Erro de conexão.'); }
   };
   window.authSair=async function(){
     try{ const {data}=await sb.auth.getSession(); if(data?.session?.user?.id) localStorage.removeItem('fisio_assin_'+data.session.user.id); }catch(e){}
