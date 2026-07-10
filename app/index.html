@@ -226,6 +226,7 @@ html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked n
     <button class="ghost" onclick="imprimir(false)">🖨️ Imprimir tudo</button>
     <button class="ghost" onclick="imprimir(true)">📄 Imprimir resumo</button>
     <button class="ghost" onclick="limparTudo()">🗑️ Limpar</button>
+    <button class="ghost" id="btnConfig" style="display:none" onclick="abrirConfig()">⚙️ Configurações</button>
     <button class="ghost" id="btnSair" style="display:none" onclick="authSair()">🚪 Sair</button>
   </div>
 </header>
@@ -1790,6 +1791,21 @@ if(_nasc) _nasc.addEventListener('change',()=>{
 const _dataAv=document.querySelector('[data-k="id_data"]');
 if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
 </script>
+<div id="configModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center;padding:18px">
+  <div style="background:#fff;border-radius:14px;padding:26px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <h3 style="color:var(--azul);margin:0 0 18px;font-size:17px">⚙️ Configurações</h3>
+    <label style="font-size:12px;font-weight:600;color:var(--cinza);display:block;margin-bottom:4px">Nova senha <span style="font-weight:400">(mínimo 6 caracteres)</span></label>
+    <input type="password" id="novaSenha" autocomplete="new-password" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:7px;font-size:14px;margin-bottom:10px">
+    <label style="font-size:12px;font-weight:600;color:var(--cinza);display:block;margin-bottom:4px">Confirmar nova senha</label>
+    <input type="password" id="confirmaSenha" autocomplete="new-password" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:7px;font-size:14px;margin-bottom:14px">
+    <div id="configMsg" style="font-size:13px;margin-bottom:10px;min-height:18px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="fecharConfig()" style="flex:1;background:#eef4fa;color:var(--azul2);border:1px solid var(--borda)">Cancelar</button>
+      <button onclick="salvarNovaSenha()" id="btnSalvarSenha" style="flex:1;background:var(--azul);color:#fff">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <div class="auth-gate" id="authGate" style="display:none">
   <div class="auth-card">
     <h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 64 64" width="30" height="30" style="flex:none" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="15" fill="#0f4c81"/><circle cx="32" cy="19" r="5.5" fill="#fff"/><path d="M32 25 C27 29 23 29 19 26 M32 25 C37 27 43 26 47 22 M32 25 L32 39 L25 51 M32 39 L40 50" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 48 Q32 39 50 48" fill="none" stroke="#6fa8d4" stroke-width="2.4" stroke-linecap="round"/></svg>Ficha Fisio</h2>
@@ -1841,6 +1857,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     if(pg) pg.style.display = estado==='pay'?'flex':'none';
     document.documentElement.classList.toggle('locked', estado!=='app');
     const s=$('btnSair'); if(s) s.style.display = estado==='app'?'':'none';
+    const c=$('btnConfig'); if(c) c.style.display = estado==='app'?'':'none';
   }
   if(!window.AUTH_ATIVO){ telas('app'); return; }   // login desligado → abre normal
   telas('login');                                   // garante que nunca fica em branco
@@ -1922,7 +1939,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   window.authReset=async function(){
     const email=$('authEmail').value.trim();
     if(!email){msg('Digite seu e-mail acima para redefinir a senha.');return;}
-    try{ const {error}=await sb.auth.resetPasswordForEmail(email); msg(error?error.message:'Enviamos um link de redefinição para seu e-mail.', !error); }
+    try{ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://fichafisio.com.br/app/'}); msg(error?error.message:'Enviamos um link de redefinição para seu e-mail.', !error); }
     catch(e){ msg('Erro de conexão.'); }
   };
   window.authSair=async function(){
@@ -1935,6 +1952,27 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     try{ const {data}=await sb.auth.getSession(); await checarAcesso(data.session); }catch(e){ if(pm){ pm.textContent='Erro ao verificar: '+(e.message||e); pm.className='auth-msg err'; } }
   };
   window.assinar=function(){ if(window.PAY_URL){ window.open(window.PAY_URL,'_blank'); } else { const m=$('payMsg'); if(m){ m.textContent='Link de pagamento ainda não configurado.'; m.className='auth-msg err'; } } };
+  window.abrirConfig=function(){
+    const m=$('configModal'); if(m){m.style.display='flex'; $('novaSenha').value=''; $('confirmaSenha').value=''; $('configMsg').textContent='';}
+  };
+  window.fecharConfig=function(){
+    const m=$('configModal'); if(m) m.style.display='none';
+  };
+  window.salvarNovaSenha=async function(){
+    const nova=$('novaSenha').value, confirma=$('confirmaSenha').value;
+    const msgEl=$('configMsg'), btn=$('btnSalvarSenha');
+    if(!nova||nova.length<6){msgEl.textContent='A senha precisa ter pelo menos 6 caracteres.';msgEl.style.color='var(--vermelho)';return;}
+    if(nova!==confirma){msgEl.textContent='As senhas não coincidem.';msgEl.style.color='var(--vermelho)';return;}
+    btn.disabled=true; btn.textContent='Salvando...';
+    try{
+      const {error}=await sb.auth.updateUser({password:nova});
+      if(error) throw error;
+      msgEl.textContent='Senha alterada com sucesso!'; msgEl.style.color='var(--verde)';
+      $('novaSenha').value=''; $('confirmaSenha').value='';
+      setTimeout(()=>fecharConfig(),1500);
+    }catch(e){ msgEl.textContent=e.message||'Erro ao alterar a senha.'; msgEl.style.color='var(--vermelho)'; }
+    btn.disabled=false; btn.textContent='Salvar senha';
+  };
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){ mostrarDefinirSenha(); return; }
     checarAcesso(session);
