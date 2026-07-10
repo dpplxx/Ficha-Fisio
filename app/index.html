@@ -1848,9 +1848,28 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   if(!window.supabase){ msg('Não foi possível carregar o login. Verifique a internet e recarregue a página.'); return; }
   let sb;
   function comTimeout(p,ms){return Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado — tente novamente.')), ms||15000))]);}
-  try{ sb=window.supabase.createClient(window.SUPA_URL, window.SUPA_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, lock: async (n,t,fn)=> await fn() } }); }
+  try{ sb=window.supabase.createClient(window.SUPA_URL, window.SUPA_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, lock: async (n,t,fn)=> await fn() } }); }
   catch(e){ msg('Erro ao iniciar o login: '+(e.message||e)); return; }
   window._sb=sb;
+  // Tela de definir senha (recovery)
+  function mostrarDefinirSenha(){
+    if(gate) gate.style.display='flex';
+    $('authSub').textContent='Defina sua senha para acessar o Ficha Fisio.';
+    $('authPass').style.display='';
+    $('authBtn').textContent='Salvar senha';
+    $('authBtn').onclick=async function(){
+      const pass=$('authPass').value;
+      if(!pass||pass.length<6){msg('A senha precisa ter pelo menos 6 caracteres.');return;}
+      const btn=$('authBtn'); btn.disabled=true; btn.textContent='Salvando...';
+      try{
+        const {error}=await sb.auth.updateUser({password:pass});
+        if(error) throw error;
+        msg('Senha definida! Verificando acesso...','ok');
+        const {data}=await sb.auth.getSession();
+        await checarAcesso(data.session);
+      }catch(e){ msg(e.message||'Erro ao salvar senha.'); btn.disabled=false; btn.textContent='Salvar senha'; }
+    };
+  }
   function lerCache(uid){try{const v=JSON.parse(localStorage.getItem('fisio_assin_'+uid)); if(v && (Date.now()-v.ts)<86400000) return v.ativo;}catch(e){} return null;}
   function gravarCache(uid,ativo){try{localStorage.setItem('fisio_assin_'+uid,JSON.stringify({ativo:!!ativo,ts:Date.now()}));}catch(e){}}
   async function checarAcesso(session){
@@ -1916,7 +1935,10 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     try{ const {data}=await sb.auth.getSession(); await checarAcesso(data.session); }catch(e){ if(pm){ pm.textContent='Erro ao verificar: '+(e.message||e); pm.className='auth-msg err'; } }
   };
   window.assinar=function(){ if(window.PAY_URL){ window.open(window.PAY_URL,'_blank'); } else { const m=$('payMsg'); if(m){ m.textContent='Link de pagamento ainda não configurado.'; m.className='auth-msg err'; } } };
-  sb.auth.onAuthStateChange((_e,session)=>checarAcesso(session));
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){ mostrarDefinirSenha(); return; }
+    checarAcesso(session);
+  });
   sb.auth.getSession().then(({data})=>checarAcesso(data.session)).catch(()=>telas('login'));
 })();
 </script>
