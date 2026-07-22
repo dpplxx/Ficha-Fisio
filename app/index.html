@@ -1724,7 +1724,7 @@ function cancelarAssinatura(){
 function enviarPreAnamnese(){
   let meuTel=(localStorage.getItem('fisio_whats')||'').replace(/\D/g,'');
   if(!meuTel){
-    const n=prompt('Digite seu WhatsApp com DDD (só números):\nEx: 27998904164\n\nSó precisa fazer isso uma vez.');
+    const n=prompt('Digite seu WhatsApp com DDD (só números):\nEx: 11999990000\n\nSó precisa fazer isso uma vez.');
     if(!n) return;
     meuTel=n.replace(/\D/g,'');
     localStorage.setItem('fisio_whats',meuTel);
@@ -1734,9 +1734,12 @@ function enviarPreAnamnese(){
   abrirModal(`<h3>📤 Pré-anamnese — enviar ao paciente</h3>
     <div class="legend">Copie a mensagem abaixo e cole no WhatsApp do paciente:</div>
     <textarea id="msgPreA" style="width:100%;min-height:110px;font-size:14px" readonly>${msg}</textarea>
-    <div class="modal-actions">
-      <button onclick="fecharModal()">Fechar</button>
-      <button style="background:var(--azul);color:#fff" onclick="navigator.clipboard.writeText(document.getElementById('msgPreA').value).then(()=>{flash('Mensagem copiada!');fecharModal();})">📋 Copiar mensagem</button>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button onclick="localStorage.removeItem('fisio_whats');fecharModal();enviarPreAnamnese()">✏️ Alterar número</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="fecharModal()">Fechar</button>
+        <button style="background:var(--azul);color:#fff" onclick="navigator.clipboard.writeText(document.getElementById('msgPreA').value).then(()=>{flash('Mensagem copiada!');fecharModal();})">📋 Copiar mensagem</button>
+      </div>
     </div>`);
 }
 
