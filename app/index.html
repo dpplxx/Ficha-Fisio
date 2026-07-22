@@ -19,7 +19,7 @@ window.SUPA_ANON='sb_publishable_PkF0rYNRF7XwxccMNQCYDg_P0mOjkHe';
 window.AUTH_ATIVO = !!(window.SUPA_ANON && window.SUPA_ANON.indexOf('COLE')===-1);
 if(window.AUTH_ATIVO) document.documentElement.classList.add('locked');
 window.PAY_URL='https://www.asaas.com/c/04t2s5yf13ravg2e'; /* link Asaas — mensal */
-window.PAY_PRECO='R$ 14,90/mês'; /* preço exibido na tela de assinatura */
+window.PAY_PRECO='R$ 9,90/mês'; /* preço exibido na tela de assinatura */
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1841,8 +1841,8 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
       <li><span class="ck">✓</span>Agenda e controle financeiro</li>
       <li><span class="ck">✓</span>Funciona no celular e no computador</li>
     </ul>
-    <div class="sell-price"><span id="payPreco">R$ 14,90</span><small> acesso vitalício</small></div>
-    <button class="primary" onclick="assinar()">Comprar acesso</button>
+    <div class="sell-price"><span id="payPreco">R$ 9,90</span><small>/mês</small></div>
+    <button class="primary" onclick="assinar()">Assinar agora</button>
     <p class="sell-sec">🔒 Pagamento seguro via Asaas · PIX · Cartão</p>
     <div class="pay-email" id="payEmail"></div>
     <div class="auth-msg" id="payMsg"></div>
