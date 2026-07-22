@@ -83,6 +83,10 @@ th{background:var(--claro);color:var(--azul);font-weight:600}
 .reflink:hover{background:var(--azul);color:#fff}
 .seg-head{flex-basis:100%;width:100%;font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 2px;border-bottom:1px solid var(--borda);padding-bottom:3px}
 .legend{font-size:11.5px;color:var(--cinza);background:var(--claro);padding:8px 10px;border-radius:6px;margin-bottom:10px}
+/* Banner de trial */
+#trialBanner{display:none;background:#b45309;color:#fff;text-align:center;padding:7px 14px;font-size:13px;font-weight:600;line-height:1.5}
+#trialBanner a{color:#fde68a;text-decoration:underline;cursor:pointer;margin-left:6px;font-weight:700}
+html.locked #trialBanner{display:none!important}
 /* Barra de pacientes */
 .patient-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#11436f;color:#fff;padding:8px 16px;font-size:13px}
 .patient-bar .pb-label{font-weight:600}
@@ -243,6 +247,8 @@ html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked n
   <span id="contadorPacientes" class="pb-count"></span>
   <span class="pb-lgpd">🔒 Dados sensíveis (LGPD): salvos só neste navegador. Faça backup regularmente.</span>
 </div>
+
+<div id="trialBanner" class="no-print"></div>
 
 <div class="mode-bar no-print">
   <button class="mode-btn active" data-mode="ficha" onclick="setView('ficha')">📋 Ficha do paciente</button>
@@ -1889,28 +1895,77 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   }
   function lerCache(uid){try{const v=JSON.parse(localStorage.getItem('fisio_assin_'+uid)); if(v && (Date.now()-v.ts)<86400000) return v.ativo;}catch(e){} return null;}
   function gravarCache(uid,ativo){try{localStorage.setItem('fisio_assin_'+uid,JSON.stringify({ativo:!!ativo,ts:Date.now()}));}catch(e){}}
+  /* ---- Trial gratuito ---- */
+  const TRIAL_DIAS=5;
+  function trialKey(uid){return 'fisio_trial_'+uid;}
+  function lerTrial(uid){
+    try{
+      const v=localStorage.getItem(trialKey(uid));
+      if(!v) return null;
+      const ms=TRIAL_DIAS*86400000-(Date.now()-parseInt(v));
+      return Math.max(0,Math.ceil(ms/86400000));
+    }catch(e){return null;}
+  }
+  function iniciarTrial(uid){
+    try{if(!localStorage.getItem(trialKey(uid)))localStorage.setItem(trialKey(uid),String(Date.now()));}catch(e){}
+  }
+  function mostrarBannerTrial(dias){
+    const b=document.getElementById('trialBanner');
+    if(!b)return;
+    b.innerHTML=dias<=1
+      ?'⏰ Último dia do seu período de teste gratuito. <a onclick="assinar()">Assine agora para não perder acesso.</a>'
+      :'🎁 Período de teste gratuito: '+dias+' dias restantes. <a onclick="assinar()">Assine e continue com tudo.</a>';
+    b.style.display='block';
+  }
+  function esconderBannerTrial(){const b=document.getElementById('trialBanner');if(b)b.style.display='none';}
+  function mostrarMsgTrialExpirado(email){
+    const pm=$('payMsg');
+    if(pm){pm.textContent='Seu período de teste de '+TRIAL_DIAS+' dias terminou. Assine para continuar usando o Ficha Fisio.';pm.className='auth-msg err';}
+    const pe=$('payEmail');
+    if(pe&&email){pe.innerHTML='⚠️ Na hora de pagar, use o e-mail desta conta:<br><b>'+email+'</b>';pe.classList.add('show');}
+  }
   async function checarAcesso(session){
-    if(!session){ telas('login'); return; }
+    if(!session){telas('login');return;}
     const uid=session.user.id;
+    const diasTrial=lerTrial(uid);
+    // Trial ativo → acesso imediato; verifica assinatura em segundo plano
+    if(diasTrial!==null&&diasTrial>0){
+      telas('app');mostrarBannerTrial(diasTrial);
+      comTimeout(sb.from('assinantes').select('status,validade').eq('id',uid).maybeSingle(),6000)
+        .then(({data})=>{const ok=!!(data&&data.status==='ativo'&&(!data.validade||new Date(data.validade)>=new Date()));gravarCache(uid,ok);if(ok)esconderBannerTrial();})
+        .catch(()=>{});
+      return;
+    }
+    // Trial expirado ou sem trial → verificar assinatura
     const cached=lerCache(uid);
-    if(cached!==null) telas(cached?'app':'pay');   // mostra na hora pelo cache, verifica em segundo plano
+    if(cached===true){telas('app');return;}
+    if(cached===false&&diasTrial===0){telas('pay');mostrarMsgTrialExpirado(session.user.email);return;}
     try{
       const {data,error}=await comTimeout(sb.from('assinantes').select('status,validade').eq('id',uid).maybeSingle());
-      if(error) throw error;
-      const ativo = !!(data && data.status==='ativo' && (!data.validade || new Date(data.validade) >= new Date()));
+      if(error)throw error;
+      const ativo=!!(data&&data.status==='ativo'&&(!data.validade||new Date(data.validade)>=new Date()));
       gravarCache(uid,ativo);
-      telas(ativo?'app':'pay');
-      if(!ativo){
-        const pm=$('payMsg'); if(pm){pm.textContent='Esta conta ainda não tem uma assinatura ativa.'; pm.className='auth-msg err';}
-        const pe=$('payEmail'); if(pe){pe.innerHTML='⚠️ Na hora de pagar, use o e-mail desta conta:<br><b>'+(session.user.email||'')+'</b>'; pe.classList.add('show');}
+      if(ativo){telas('app');return;}
+      if(diasTrial===null){
+        iniciarTrial(uid);telas('app');mostrarBannerTrial(TRIAL_DIAS);
+      }else{
+        telas('pay');mostrarMsgTrialExpirado(session.user.email);
       }
-    }catch(e){ if(cached===null){ telas('pay'); const pm=$('payMsg'); if(pm){pm.textContent='Não consegui verificar a assinatura. Já rodou o SQL da tabela no Supabase? ('+(e.message||e)+')'; pm.className='auth-msg err';} } }
+    }catch(e){
+      if(cached!==null){telas(cached?'app':'pay');return;}
+      if(diasTrial===null){
+        iniciarTrial(uid);telas('app');mostrarBannerTrial(TRIAL_DIAS);
+      }else if(diasTrial===0){
+        telas('pay');
+        const pm=$('payMsg');if(pm){pm.textContent='Sem conexão para verificar a assinatura. ('+(e.message||e)+')';pm.className='auth-msg err';}
+      }
+    }
   }
   window.authAlternar=function(){
     modo = modo==='login'?'signup':'login';
     $('authBtn').textContent = modo==='login'?'Entrar':'Criar conta';
     $('authToggle').textContent = modo==='login'?'Criar conta':'Já tenho conta';
-    $('authSub').textContent = modo==='login'?'Entre para acessar sua ficha de avaliação.':'Crie sua conta para começar.';
+    $('authSub').textContent = modo==='login'?'Entre para acessar sua ficha de avaliação.':'5 dias grátis, sem cartão. Crie sua conta para começar.';
     $('authMsg').className='auth-msg';
   };
   window.authPrincipal=async function(){
