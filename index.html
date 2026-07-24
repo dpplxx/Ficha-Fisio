@@ -611,6 +611,35 @@
     .footer-social a:hover { border-color: rgba(255,255,255,.7); color: #fff; }
     .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
 
+    /* ── SCREENSHOTS GALLERY ── */
+    .screenshots {
+      padding: 70px 24px;
+      background: #f0f5ff;
+    }
+    .screenshots-inner { max-width: 1100px; margin: 0 auto; }
+    .screenshots h2 { margin-bottom: 10px; }
+    .screenshots .section-sub { margin-bottom: 52px; }
+    .phones-row {
+      display: flex; gap: 40px; justify-content: center; align-items: flex-start;
+      overflow-x: auto; padding-bottom: 8px;
+    }
+    .phone-showcase { display: flex; flex-direction: column; align-items: center; gap: 18px; flex-shrink: 0; }
+    .phone-showcase-frame {
+      width: 195px; border-radius: 28px;
+      background: #0a1a33; border: 4px solid #1e3a5f; overflow: hidden;
+      box-shadow: 0 24px 56px rgba(0,0,0,.22);
+    }
+    .phone-showcase-notch {
+      height: 18px; background: #0a1a33;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .phone-showcase-notch-inner { width: 56px; height: 10px; background: #0d2040; border-radius: 99px; }
+    .phone-showcase-screen { display: flex; flex-direction: column; min-height: 380px; }
+    .phone-showcase-caption { text-align: center; }
+    .phone-showcase-caption strong { display: block; font-size: .92rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .phone-showcase-caption span { font-size: .8rem; color: var(--muted); }
+    @media (max-width: 900px) { .phones-row { justify-content: flex-start; gap: 24px; } }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       .hero-inner { grid-template-columns: 1fr; }
@@ -665,23 +694,66 @@
       <div class="phone-wrap">
         <div class="phone-frame">
           <div class="phone-notch"><div class="phone-notch-inner"></div></div>
-          <div class="phone-screen">
-            <div class="mock-card">
-              <div class="mock-logo">
-                <div class="mock-logo-icon">
-                  <svg viewBox="0 0 16 16"><circle cx="8" cy="4" r="2.5" fill="white"/><path d="M8 7c-2.5 0-4 1.5-4 3v1.5h8V10c0-1.5-1.5-3-4-3z" fill="white"/><path d="M5 12l1 3h4l1-3" fill="white"/></svg>
-                </div>
-                <span class="mock-logo-text">Ficha Fisio</span>
+          <div class="phone-screen" style="padding:0;justify-content:flex-start;align-items:stretch;background:#f1f5f9">
+            <!-- App header -->
+            <div style="background:#1a4f8e;padding:8px 12px;display:flex;align-items:center;gap:8px">
+              <div style="background:rgba(255,255,255,.18);border-radius:5px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.65rem">📋</div>
+              <div style="color:#fff;line-height:1.25">
+                <div style="font-size:.6rem;font-weight:700">Ficha Fisio</div>
+                <div style="font-size:.48rem;opacity:.7">Avaliação Fisioterapêutica</div>
               </div>
-              <div class="mock-sub">Entre para acessar sua ficha de avaliação.</div>
-              <div class="mock-label">E-mail</div>
-              <div class="mock-input"></div>
-              <div class="mock-label">Senha</div>
-              <div class="mock-input"></div>
-              <div class="mock-btn"><span class="mock-btn-text">Entrar</span></div>
-              <div class="mock-links">
-                <span class="mock-link">Criar conta</span>
-                <span class="mock-link">Esqueci a senha</span>
+            </div>
+            <!-- Patient selector -->
+            <div style="background:#163d7a;padding:5px 12px;color:rgba(255,255,255,.9);font-size:.52rem;display:flex;align-items:center;justify-content:space-between">
+              <span>Maria Aparecida Santos — 24/07/2026</span>
+              <span style="opacity:.5">▾</span>
+            </div>
+            <!-- Tab bar -->
+            <div style="background:#fff;display:flex;border-bottom:2px solid #e2e8f0;padding:0 6px;gap:2px">
+              <div style="padding:5px 6px;font-size:.48rem;font-weight:700;color:#1a4f8e;border-bottom:2.5px solid #1a4f8e;margin-bottom:-2px;white-space:nowrap">Ident.</div>
+              <div style="padding:5px 5px;font-size:.46rem;color:#94a3b8;white-space:nowrap">Dor</div>
+              <div style="padding:5px 4px;font-size:.44rem;color:#94a3b8;white-space:nowrap">Articular</div>
+              <div style="padding:5px 4px;font-size:.44rem;color:#94a3b8;white-space:nowrap">Escalas</div>
+              <div style="padding:5px 4px;font-size:.44rem;color:#94a3b8;white-space:nowrap">Evolução</div>
+            </div>
+            <!-- Content -->
+            <div style="padding:10px 12px;flex:1">
+              <div style="font-size:.58rem;font-weight:700;color:#1e40af;margin-bottom:6px">1. Identificação do Paciente</div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;margin-bottom:4px">
+                <div style="font-size:.45rem;color:#64748b">Nome completo</div>
+                <div style="font-size:.58rem;font-weight:600;color:#1e293b">Maria Aparecida Santos</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px">
+                  <div style="font-size:.42rem;color:#64748b">Nascimento</div>
+                  <div style="font-size:.52rem;font-weight:600;color:#1e293b">15/03/1978</div>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px">
+                  <div style="font-size:.42rem;color:#64748b">Idade</div>
+                  <div style="font-size:.52rem;font-weight:600;color:#1e293b">48 anos</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px">
+                  <div style="font-size:.42rem;color:#64748b">Sexo</div>
+                  <div style="font-size:.52rem;font-weight:600;color:#1e293b">Feminino</div>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px">
+                  <div style="font-size:.42rem;color:#64748b">Profissão</div>
+                  <div style="font-size:.52rem;font-weight:600;color:#1e293b">Professora</div>
+                </div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;margin-bottom:4px">
+                <div style="font-size:.42rem;color:#64748b">Diagnóstico clínico</div>
+                <div style="font-size:.52rem;font-weight:600;color:#1e293b">Lombalgia crônica (M54.5)</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;margin-bottom:8px">
+                <div style="font-size:.42rem;color:#64748b">Fisioterapeuta</div>
+                <div style="font-size:.5rem;font-weight:600;color:#1e293b">Dra. Ana Lima — CREFITO 3/45678</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:5px 8px">
+                <span style="font-size:.7rem">✅</span>
+                <span style="font-size:.48rem;color:#166534;font-weight:600">Bandeiras vermelhas — sem alertas</span>
               </div>
             </div>
           </div>
@@ -699,6 +771,211 @@
     <span class="proof-text">Simples, completo e sempre atualizado</span>
   </div>
 </div>
+
+<!-- SCREENSHOTS GALLERY -->
+<section class="screenshots">
+  <div class="screenshots-inner">
+    <div class="section-label">O app em ação</div>
+    <h2>Do primeiro atendimento à alta — tudo documentado</h2>
+    <p class="section-sub">Veja como fica cada etapa da avaliação no app real.</p>
+
+    <div class="phones-row">
+
+      <!-- Screen 1: Dor & Inspeção -->
+      <div class="phone-showcase">
+        <div class="phone-showcase-frame">
+          <div class="phone-showcase-notch"><div class="phone-showcase-notch-inner"></div></div>
+          <div class="phone-showcase-screen">
+            <div style="background:#1a4f8e;padding:7px 10px;display:flex;align-items:center;gap:7px">
+              <div style="color:#fff;font-size:.55rem;font-weight:700;line-height:1.3">Ficha Fisio<br><span style="font-weight:400;opacity:.7;font-size:.44rem">Avaliação Fisioterapêutica</span></div>
+            </div>
+            <div style="background:#163d7a;padding:4px 10px;color:rgba(255,255,255,.85);font-size:.5rem">Maria Aparecida Santos</div>
+            <div style="background:#fff;display:flex;border-bottom:2px solid #e2e8f0;padding:0 4px;gap:1px">
+              <div style="padding:4px 5px;font-size:.43rem;color:#94a3b8">Ident.</div>
+              <div style="padding:4px 5px;font-size:.43rem;font-weight:700;color:#1a4f8e;border-bottom:2px solid #1a4f8e;margin-bottom:-2px">Dor</div>
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Articular</div>
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Escalas</div>
+            </div>
+            <div style="background:#f1f5f9;padding:8px 10px;flex:1">
+              <div style="font-size:.54rem;font-weight:700;color:#1e40af;margin-bottom:5px">4. Avaliação da Dor — EVA/END</div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 8px;margin-bottom:4px">
+                <div style="font-size:.44rem;color:#64748b;margin-bottom:5px">Dor em repouso</div>
+                <div style="height:6px;border-radius:3px;background:linear-gradient(90deg,#22c55e 0%,#eab308 50%,#ef4444 100%);position:relative;margin-bottom:4px">
+                  <div style="position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:#1e40af;border:1.5px solid #fff;left:calc(50% - 6px);box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+                </div>
+                <div style="font-size:.58rem;font-weight:700;color:#1e40af">5/10</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 8px;margin-bottom:4px">
+                <div style="font-size:.44rem;color:#64748b;margin-bottom:5px">Dor em movimento</div>
+                <div style="height:6px;border-radius:3px;background:linear-gradient(90deg,#22c55e 0%,#eab308 50%,#ef4444 100%);position:relative;margin-bottom:4px">
+                  <div style="position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:#1e40af;border:1.5px solid #fff;left:calc(70% - 6px);box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+                </div>
+                <div style="font-size:.58rem;font-weight:700;color:#1e40af">7/10</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 8px;margin-bottom:8px">
+                <div style="font-size:.44rem;color:#64748b;margin-bottom:5px">Pior dor (24h)</div>
+                <div style="height:6px;border-radius:3px;background:linear-gradient(90deg,#22c55e 0%,#eab308 50%,#ef4444 100%);position:relative;margin-bottom:4px">
+                  <div style="position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:#dc2626;border:1.5px solid #fff;left:calc(80% - 6px);box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+                </div>
+                <div style="font-size:.58rem;font-weight:700;color:#dc2626">8/10</div>
+              </div>
+              <div style="font-size:.54rem;font-weight:700;color:#1e40af;margin-bottom:5px">Mapa Corporal da Dor</div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 10px;display:flex;gap:8px;align-items:center">
+                <svg viewBox="0 0 50 120" width="36" style="flex-shrink:0">
+                  <ellipse cx="25" cy="8" rx="7" ry="7" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <rect x="18" y="15" width="14" height="26" rx="4" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <rect x="6" y="16" width="10" height="20" rx="4" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <rect x="34" y="16" width="10" height="20" rx="4" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <rect x="18" y="41" width="6" height="26" rx="3" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <rect x="26" y="41" width="6" height="26" rx="3" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <circle cx="24" cy="39" r="4" fill="#ef4444" opacity=".75"/>
+                  <circle cx="29" cy="41" r="3.5" fill="#f97316" opacity=".7"/>
+                  <circle cx="20" cy="50" r="3" fill="#fbbf24" opacity=".65"/>
+                </svg>
+                <div>
+                  <div style="font-size:.5rem;font-weight:700;color:#1e293b">3 pontos marcados</div>
+                  <div style="font-size:.43rem;color:#64748b;margin-top:1px">Região lombar · MIE</div>
+                  <div style="display:flex;gap:3px;margin-top:4px">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#ef4444"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#fbbf24"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-showcase-caption">
+          <strong>Avaliação da Dor</strong>
+          <span>EVA/END + mapa corporal interativo</span>
+        </div>
+      </div>
+
+      <!-- Screen 2: Escalas Validadas -->
+      <div class="phone-showcase">
+        <div class="phone-showcase-frame">
+          <div class="phone-showcase-notch"><div class="phone-showcase-notch-inner"></div></div>
+          <div class="phone-showcase-screen">
+            <div style="background:#1a4f8e;padding:7px 10px">
+              <div style="color:#fff;font-size:.55rem;font-weight:700;line-height:1.3">Ficha Fisio<br><span style="font-weight:400;opacity:.7;font-size:.44rem">Avaliação Fisioterapêutica</span></div>
+            </div>
+            <div style="background:#163d7a;padding:4px 10px;color:rgba(255,255,255,.85);font-size:.5rem">Maria Aparecida Santos</div>
+            <div style="background:#fff;display:flex;border-bottom:2px solid #e2e8f0;padding:0 4px;gap:1px">
+              <div style="padding:4px 5px;font-size:.43rem;color:#94a3b8">Dor</div>
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Articular</div>
+              <div style="padding:4px 4px;font-size:.43rem;font-weight:700;color:#1a4f8e;border-bottom:2px solid #1a4f8e;margin-bottom:-2px">Escalas</div>
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Diag.</div>
+            </div>
+            <div style="background:#f1f5f9;padding:8px 10px;flex:1">
+              <div style="font-size:.54rem;font-weight:700;color:#1e40af;margin-bottom:5px">Escalas Validadas</div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px;margin-bottom:5px">
+                <div style="font-size:.5rem;font-weight:700;color:#334155;margin-bottom:2px">ODI — Índice de Oswestry</div>
+                <div style="font-size:.42rem;color:#64748b;margin-bottom:6px">Incapacidade funcional por lombalgia</div>
+                <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:5px">
+                  <span style="font-size:1.2rem;font-weight:800;color:#dc2626;line-height:1">28</span>
+                  <span style="font-size:.48rem;color:#64748b">/50 pts · 56%</span>
+                </div>
+                <div style="height:7px;background:#f1f5f9;border-radius:4px;margin-bottom:5px">
+                  <div style="width:56%;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px"></div>
+                </div>
+                <span style="background:#fef3c7;color:#92400e;font-size:.46rem;font-weight:700;padding:2px 8px;border-radius:99px">Incapacidade moderada</span>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px;margin-bottom:5px">
+                <div style="font-size:.5rem;font-weight:700;color:#334155;margin-bottom:4px">Roland-Morris Disability</div>
+                <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:5px">
+                  <span style="font-size:1.1rem;font-weight:800;color:#f59e0b;line-height:1">12</span>
+                  <span style="font-size:.48rem;color:#64748b">/24 pontos</span>
+                </div>
+                <div style="height:5px;background:#f1f5f9;border-radius:3px">
+                  <div style="width:50%;height:100%;background:#3b82f6;border-radius:3px"></div>
+                </div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px">
+                <div style="font-size:.5rem;font-weight:700;color:#334155;margin-bottom:4px">PSFS — Funcionalidade</div>
+                <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:3px">
+                  <span style="font-size:1.1rem;font-weight:800;color:#16a34a;line-height:1">6,5</span>
+                  <span style="font-size:.48rem;color:#64748b">/10 ↑</span>
+                </div>
+                <div style="font-size:.43rem;color:#16a34a;font-weight:600">✓ Melhora clinicamente significativa</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-showcase-caption">
+          <strong>+30 Escalas Validadas</strong>
+          <span>Pontuação automática e interpretação</span>
+        </div>
+      </div>
+
+      <!-- Screen 3: Evolução -->
+      <div class="phone-showcase">
+        <div class="phone-showcase-frame">
+          <div class="phone-showcase-notch"><div class="phone-showcase-notch-inner"></div></div>
+          <div class="phone-showcase-screen">
+            <div style="background:#1a4f8e;padding:7px 10px">
+              <div style="color:#fff;font-size:.55rem;font-weight:700;line-height:1.3">Ficha Fisio<br><span style="font-weight:400;opacity:.7;font-size:.44rem">Avaliação Fisioterapêutica</span></div>
+            </div>
+            <div style="background:#163d7a;padding:4px 10px;color:rgba(255,255,255,.85);font-size:.5rem">Maria Aparecida Santos</div>
+            <div style="background:#fff;display:flex;border-bottom:2px solid #e2e8f0;padding:0 4px;gap:1px">
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Escalas</div>
+              <div style="padding:4px 4px;font-size:.41rem;color:#94a3b8">Diag.</div>
+              <div style="padding:4px 4px;font-size:.43rem;font-weight:700;color:#1a4f8e;border-bottom:2px solid #1a4f8e;margin-bottom:-2px">Evolução</div>
+            </div>
+            <div style="background:#f1f5f9;padding:8px 10px;flex:1">
+              <div style="font-size:.54rem;font-weight:700;color:#1e40af;margin-bottom:5px">Evolução da Dor (EVA)</div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:10px 8px;margin-bottom:5px">
+                <svg viewBox="0 0 155 72" width="100%" style="display:block">
+                  <defs>
+                    <linearGradient id="evGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18"/>
+                      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <line x1="22" y1="8" x2="152" y2="8" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="22" y1="22" x2="152" y2="22" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="22" y1="36" x2="152" y2="36" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="22" y1="50" x2="152" y2="50" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="22" y1="62" x2="152" y2="62" stroke="#e2e8f0" stroke-width="1"/>
+                  <text x="18" y="10" font-size="4.5" fill="#94a3b8" text-anchor="end">10</text>
+                  <text x="18" y="24" font-size="4.5" fill="#94a3b8" text-anchor="end">7</text>
+                  <text x="18" y="38" font-size="4.5" fill="#94a3b8" text-anchor="end">5</text>
+                  <text x="18" y="52" font-size="4.5" fill="#94a3b8" text-anchor="end">3</text>
+                  <text x="18" y="64" font-size="4.5" fill="#94a3b8" text-anchor="end">0</text>
+                  <path d="M28,22 L55,26 L82,36 L109,43 L136,53 L148,59" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M28,22 L55,26 L82,36 L109,43 L136,53 L148,59 L148,62 L28,62 Z" fill="url(#evGrad)"/>
+                  <circle cx="28" cy="22" r="3" fill="#3b82f6"/>
+                  <circle cx="55" cy="26" r="2.5" fill="#3b82f6" opacity=".8"/>
+                  <circle cx="82" cy="36" r="2.5" fill="#3b82f6" opacity=".8"/>
+                  <circle cx="109" cy="43" r="2.5" fill="#3b82f6" opacity=".8"/>
+                  <circle cx="136" cy="53" r="2.5" fill="#22c55e" opacity=".9"/>
+                  <circle cx="148" cy="59" r="3" fill="#22c55e"/>
+                  <text x="28" y="70" font-size="4" fill="#94a3b8" text-anchor="middle">1ª</text>
+                  <text x="82" y="70" font-size="4" fill="#94a3b8" text-anchor="middle">5ª</text>
+                  <text x="136" y="70" font-size="4" fill="#94a3b8" text-anchor="middle">10ª</text>
+                  <text x="148" y="70" font-size="4" fill="#22c55e" text-anchor="middle" font-weight="700">12ª</text>
+                </svg>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 8px;margin-bottom:6px">
+                <div style="font-size:.5rem;font-weight:700;color:#334155;margin-bottom:3px">Sessão 12 — 24/07/2026</div>
+                <div style="font-size:.45rem;color:#475569;line-height:1.5">Evolução satisfatória. Retornou ao trabalho. Metas funcionais atingidas. Alta programada.</div>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <span style="background:#dcfce7;color:#166534;font-size:.44rem;font-weight:700;padding:2px 8px;border-radius:99px">↓ 71% na dor</span>
+                <span style="background:#dbeafe;color:#1e40af;font-size:.44rem;font-weight:700;padding:2px 8px;border-radius:99px">12 sessões</span>
+                <span style="background:#f0fdf4;color:#166534;font-size:.44rem;font-weight:700;padding:2px 8px;border-radius:99px">Alta ✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-showcase-caption">
+          <strong>Evolução documentada</strong>
+          <span>Gráfico de progresso sessão a sessão</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <!-- FEATURES -->
 <section class="features">
