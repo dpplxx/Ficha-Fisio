@@ -600,6 +600,15 @@
     }
     footer a { color: rgba(255,255,255,.6); text-decoration: none; }
     footer a:hover { color: #fff; }
+    .footer-social { display: flex; gap: 14px; justify-content: center; margin-bottom: 18px; }
+    .footer-social a {
+      display: flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.6);
+      transition: border-color .15s, color .15s;
+    }
+    .footer-social a:hover { border-color: rgba(255,255,255,.7); color: #fff; }
     .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
 
     /* ── RESPONSIVE ── */
@@ -1166,11 +1175,26 @@
 
 <!-- FOOTER -->
 <footer>
+  <div class="footer-social">
+    <a href="https://www.instagram.com/fichafisio" target="_blank" rel="noopener" aria-label="Instagram @fichafisio">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/>
+      </svg>
+    </a>
+    <a href="mailto:contato@fichafisio.com.br" aria-label="Email contato@fichafisio.com.br">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2"/>
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+      </svg>
+    </a>
+  </div>
   <div class="footer-links">
     <a href="/app/" target="_blank">Acessar o app</a>
     <a href="mailto:contato@fichafisio.com.br">Contato</a>
   </div>
-  <p>© 2025 Ficha Fisio. Todos os direitos reservados.</p>
+  <p>© 2026 Ficha Fisio. Todos os direitos reservados.</p>
 </footer>
 
 <script>
