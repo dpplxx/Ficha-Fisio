@@ -19,6 +19,7 @@ window.SUPA_ANON='sb_publishable_PkF0rYNRF7XwxccMNQCYDg_P0mOjkHe';
 window.AUTH_ATIVO = !!(window.SUPA_ANON && window.SUPA_ANON.indexOf('COLE')===-1);
 if(window.AUTH_ATIVO) document.documentElement.classList.add('locked');
 window.PAY_URL='https://www.asaas.com/c/04t2s5yf13ravg2e'; /* link Asaas — mensal */
+window.PAY_URL_ANUAL='https://www.asaas.com/c/8nc44vnab1xvhpbt'; /* link Asaas — anual */
 window.PAY_PRECO='R$ 9,90/mês'; /* preço exibido na tela de assinatura */
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1800,6 +1801,28 @@ if(_nasc) _nasc.addEventListener('change',()=>{
 const _dataAv=document.querySelector('[data-k="id_data"]');
 if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
 </script>
+<div id="planoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:700;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)fecharPlanoModal()">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.22)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="color:var(--azul);margin:0;font-size:17px">Escolha seu plano</h3>
+      <button onclick="fecharPlanoModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0;line-height:1">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div onclick="assinarPlano('https://www.asaas.com/c/04t2s5yf13ravg2e')" style="border:2px solid #e0e7ef;border-radius:12px;padding:16px 18px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--azul)'" onmouseout="this.style.borderColor='#e0e7ef'">
+        <div style="font-weight:700;font-size:15px;color:#1a2a3a">Mensal</div>
+        <div style="font-size:22px;font-weight:800;color:var(--azul);margin:4px 0">R$ 9,90<span style="font-size:13px;font-weight:400;color:#666">/mês</span></div>
+        <div style="font-size:12px;color:#888">Cancele quando quiser · Boleto / Pix / Cartão</div>
+      </div>
+      <div onclick="assinarPlano('https://www.asaas.com/c/8nc44vnab1xvhpbt')" style="border:2px solid var(--azul);border-radius:12px;padding:16px 18px;cursor:pointer;background:linear-gradient(135deg,#f0f7ff,#e8f4ff);position:relative;transition:border-color .2s" onmouseover="this.style.borderColor='#0a5cad'" onmouseout="this.style.borderColor='var(--azul)'">
+        <div style="position:absolute;top:-10px;right:14px;background:var(--azul);color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px">MELHOR PREÇO</div>
+        <div style="font-weight:700;font-size:15px;color:#1a2a3a">Anual</div>
+        <div style="font-size:22px;font-weight:800;color:var(--azul);margin:4px 0">R$ 89,90<span style="font-size:13px;font-weight:400;color:#666">/ano</span></div>
+        <div style="font-size:12px;color:#666">≈ R$ 7,49/mês · <b style="color:green">Economize R$ 28,90</b> · Boleto / Pix / Cartão</div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#aaa;margin:16px 0 0">🔒 Pagamento seguro via Asaas</p>
+  </div>
+</div>
 <div id="configModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center;padding:18px">
   <div style="background:#fff;border-radius:14px;padding:26px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">
     <h3 style="color:var(--azul);margin:0 0 18px;font-size:17px">⚙️ Configurações</h3>
@@ -2017,7 +2040,9 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     const pm=$('payMsg'); if(pm){ pm.textContent='Verificando assinatura...'; pm.className='auth-msg ok'; }
     try{ const {data}=await sb.auth.getSession(); await checarAcesso(data.session); }catch(e){ if(pm){ pm.textContent='Erro ao verificar: '+(e.message||e); pm.className='auth-msg err'; } }
   };
-  window.assinar=function(){ if(window.PAY_URL){ window.open(window.PAY_URL,'_blank'); } else { const m=$('payMsg'); if(m){ m.textContent='Link de pagamento ainda não configurado.'; m.className='auth-msg err'; } } };
+  window.assinar=function(){const m=$('planoModal');if(m)m.style.display='flex';};
+  window.fecharPlanoModal=function(){const m=$('planoModal');if(m)m.style.display='none';};
+  window.assinarPlano=function(url){window.fecharPlanoModal();window.open(url,'_blank');};
   window.abrirConfig=function(){
     const m=$('configModal'); if(m){m.style.display='flex'; $('novaSenha').value=''; $('confirmaSenha').value=''; $('configMsg').textContent='';}
   };
