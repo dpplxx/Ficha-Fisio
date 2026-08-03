@@ -148,7 +148,7 @@
       width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.25);
     }
     .pix-modal h3 { margin: 0 0 6px; font-size: 1.1rem; color: #111; }
-    .pix-modal p { margin: 0 0 20px; font-size: .88rem; color: #555; }
+    .pix-modal p, .pix-modal label { display: block; margin: 0 0 20px; font-size: .88rem; color: #555; }
     .pix-modal input {
       width: 100%; padding: 12px 14px; border: 1.5px solid #ddd; border-radius: 8px;
       font-size: 1rem; box-sizing: border-box; margin-bottom: 12px;
@@ -256,7 +256,7 @@
     }
     .section-label {
       text-align: center; font-size: .8rem; font-weight: 600;
-      color: var(--blue-light); text-transform: uppercase; letter-spacing: .08em;
+      color: #1e40af; text-transform: uppercase; letter-spacing: .08em;
       margin-bottom: 12px;
     }
     h2 {
@@ -1513,7 +1513,7 @@ function switchFichaTab(el, id) {
   <div class="pix-modal">
     <button class="pix-modal-fechar" onclick="fecharModalPix()">×</button>
     <h3>Pagar com PIX</h3>
-    <p>Informe seu e-mail para receber o acesso após o pagamento.</p>
+    <label for="pixEmail">Informe seu e-mail para receber o acesso após o pagamento.</label>
     <input type="email" id="pixEmail" placeholder="seu@email.com" />
     <button class="btn-pix-confirmar" id="pixBtn" onclick="confirmarPix()">Ir para o pagamento →</button>
     <div class="pix-modal-erro" id="pixErro"></div>
