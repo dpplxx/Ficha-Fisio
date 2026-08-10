@@ -2,6 +2,29 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 4) — vulnerabilidade crítica encontrada e corrigida no Supabase
+
+**Não é mudança de código — é mudança de configuração direto no painel do Supabase, registrada aqui porque foi grave.**
+
+A tabela `assinantes` tinha uma RLS policy de UPDATE ("Usuário atualiza próprio registro",
+`using (auth.uid() = id)`, **sem** `WITH CHECK`) que permitia qualquer usuário autenticado
+alterar QUALQUER coluna da própria linha — inclusive `status` e `validade`. Ou seja: bastava
+estar logado (nem precisava ter pago nada) pra rodar um `update` via SDK do Supabase e se
+autodeclarar `status: 'ativo'` com validade no futuro, sem pagar. Isso destravava a assinatura
+na raiz, inclusive enganando a function `licenca` (que lê exatamente esse campo).
+
+Verificado que o código do app nunca fazia UPDATE nessa tabela (só `select`), e que o fluxo de
+cancelamento já passa por uma Edge Function separada (`cancelar-assinatura`, fora do repo) — a
+policy não tinha nenhuma utilidade legítima. Removida:
+
+```sql
+drop policy if exists "Usuário atualiza próprio registro" on public.assinantes;
+```
+
+Ficou só a policy de SELECT ("Usuário vê próprio registro"). Toda escrita em `assinantes`
+agora só acontece via service role (webhook da Asaas e function `licenca`), nunca direto do
+cliente.
+
 ## 2026-08-10 (parte 3) — auditoria de segunda camada
 
 - Corrigido (crítico): a function `licenca` (deployada nesta data) não respondia CORS —
