@@ -2,6 +2,26 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 2)
+
+- Adicionado: controle de assinatura sem bypass client-side. O DB local agora pode ser cifrado
+  (AES-GCM) com uma chave entregue só pela nova Edge Function `licenca`, que verifica trial
+  (agora controlado no servidor, tabela `trial_starts`) ou assinatura ativa antes de entregar
+  qualquer coisa. **Requer 3 passos manuais no painel do Supabase pra entrar em vigor** — veja
+  o README, seção "Controle de assinatura sem bypass". Até lá, o app funciona exatamente como
+  antes (fail-open, não trava ninguém).
+- Migração automática e segura: no primeiro desbloqueio bem-sucedido de cada fisioterapeuta, o
+  app baixa um backup de segurança em texto puro antes de cifrar o banco pela primeira vez.
+  Testado (inclusive com chave errada, pra garantir que uma falha na decriptação nunca sobrescreve
+  o que já estava salvo).
+- Mantido o funcionamento offline do PWA: a chave de licença fica em cache local (até 3 meses)
+  pra continuar funcionando sem internet — só uma recusa explícita do servidor (403) ignora esse
+  cache, senão cancelamento de assinatura nunca revogaria nada de verdade.
+- Adicionado: backup automático em pasta local (`app/lib/fs-backup.js`, botão "📁 Backup
+  automático" na barra de pacientes) via File System Access API — Chrome/Edge; sem suporte no
+  Safari/iPhone, onde o lembrete manual de sempre continua sendo a rede de segurança.
+- Adicionado: `app/lib/db-crypto.js` (AES-GCM genérico, com testes) e `tests/db-crypto.test.js`.
+
 ## 2026-08-03
 
 - Corrigido: `validade` das assinaturas agora é calculada automaticamente pelo webhook da Asaas (antes ficava sempre `null`, dependendo só do evento de cancelamento pra desativar acesso).

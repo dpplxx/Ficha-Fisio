@@ -60,6 +60,8 @@ window.PAY_PRECO='R$ 9,90/mês'; /* preço exibido na tela de assinatura */
 <script src="lib/preanamnese-crypto.js"></script>
 <script src="lib/sanitize.js"></script>
 <script src="lib/trial.js"></script>
+<script src="lib/fs-backup.js"></script>
+<script src="lib/db-crypto.js"></script>
 <style>
 :root{
   --azul:#0f4c81; --azul2:#1769aa; --claro:#eef4fa; --borda:#cdd9e5;
@@ -288,6 +290,7 @@ html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked n
   <button onclick="novoPaciente()">➕ Novo</button>
   <button class="pb-del" onclick="excluirPaciente()">🗑️ Excluir</button>
   <button onclick="exportarBackup()">💾 Backup geral</button>
+  <button onclick="configurarBackupAutomatico()">📁 Backup automático</button>
   <button onclick="enviarPreAnamnese()">📤 Enviar pré-anamnese</button>
   <button onclick="importarPreAnamnese()">📥 Importar resposta</button>
   <span id="contadorPacientes" class="pb-count"></span>
@@ -1043,6 +1046,10 @@ const DB_KEY='fichaFisioDB_v1';
 const STORE_LEGADO='fichaFisioEvidencia_v1';
 let DB={pacientes:[], atualId:null};
 let dados = novaFicha();
+// Presença de assinatura ativa/paga com dado real cifrado no localStorage,
+// aguardando a chave da Edge Function `licenca` pra ser lido (ver desbloquearDBComChave).
+let _dbCifradoBruto=null;
+let _dbUnlockKey=null;
 
 function novaFicha(){return {regioesAtivas:[], escalasAtivas:[], escalaVals:{}, sessoes:[], mapaDor:[], imagens:[], campos:{}};}
 function hojeISO(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
@@ -1054,9 +1061,13 @@ function criarRegistro(nome, fichaDados){
 }
 function pacienteAtual(){return DB.pacientes.find(p=>p.id===DB.atualId);}
 let _avisoQuotaMostrado=false;
-function persistDB(){
+async function persistDB(){
   try{
-    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    const texto=JSON.stringify(DB);
+    // com chave em memória (assinatura/trial verificados no servidor), grava cifrado;
+    // sem chave (app sem login ativo, ou ainda não migrado), grava como sempre foi
+    const paraSalvar = (_dbUnlockKey && window.DbCrypto) ? await DbCrypto.encryptString(texto,_dbUnlockKey) : texto;
+    localStorage.setItem(DB_KEY, paraSalvar);
   }catch(e){
     // antes disso um estouro de cota (localStorage cheio, ou modo privado que bloqueia
     // escrita) falhava direto sem avisar ninguém — a mudança parecia salva, mas não estava.
@@ -1067,8 +1078,46 @@ function persistDB(){
   }
 }
 
+/* Decifra o DB salvo assim que uma chave (vinda da Edge Function `licenca`) fica
+   disponível. Se o dado salvo ainda estava em texto puro (legado, ou login/assinatura
+   desligados), só passa a cifrar dali pra frente — nunca reescreve nada às cegas. */
+async function desbloquearDBComChave(chave){
+  _dbUnlockKey=chave;
+  if(_dbCifradoBruto){
+    try{
+      const texto=await DbCrypto.decryptString(_dbCifradoBruto,chave);
+      const s=JSON.parse(texto);
+      if(!s||!s.pacientes) throw new Error('formato inesperado após decifrar');
+      DB=s; _dbCifradoBruto=null;
+      if(!DB.pacientes.length){const p=criarRegistro('Novo paciente'); DB.atualId=p.id;}
+      if(!DB.atualId||!pacienteAtual()) DB.atualId=DB.pacientes[0].id;
+      DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
+      dados=Object.assign(novaFicha(), pacienteAtual().dados);
+      return true;
+    }catch(e){
+      return false; // chave não abriu o que estava salvo — não sobrescreve nada
+    }
+  }
+  // dado ainda em texto puro: faz um backup de segurança automático ANTES de cifrar
+  // pela primeira vez, e só então passa a persistir cifrado (persistDB usa _dbUnlockKey)
+  if(!localStorage.getItem('ff_migrado_v2')){
+    try{ baixar(DB, `seguranca_migracao_${hojeISO()}.json`); }catch(e){}
+    localStorage.setItem('ff_migrado_v2','1');
+  }
+  await persistDB();
+  return true;
+}
+
 function carregarDB(){
-  try{const s=JSON.parse(localStorage.getItem(DB_KEY)); if(s&&s.pacientes) DB=s;}catch(e){}
+  const bruto=localStorage.getItem(DB_KEY);
+  if(window.DbCrypto && DbCrypto.ehCifrado(bruto)){
+    // dado real existe cifrado — não inventa paciente novo nem mexe em nada até
+    // ter a chave (ver desbloquearDBComChave, chamado pelo fluxo de login/assinatura)
+    _dbCifradoBruto=bruto;
+    dados=novaFicha();
+    return;
+  }
+  try{const s=JSON.parse(bruto); if(s&&s.pacientes) DB=s;}catch(e){}
   if(!DB.pacientes.length){ // migração de ficha antiga (formato 1 paciente)
     let legado=null; try{legado=JSON.parse(localStorage.getItem(STORE_LEGADO));}catch(e){}
     if(legado&&legado.campos){const p=criarRegistro(legado.campos.id_nome||'Paciente importado', legado); DB.atualId=p.id; localStorage.removeItem(STORE_LEGADO);}
@@ -1744,6 +1793,68 @@ function checarBannerBackup(){
   b.innerHTML=txt+' <a onclick="exportarBackup()">Fazer backup agora</a> <a onclick="esconderBannerBackup()">Lembrar em 7 dias</a>';
   b.style.display='block';
 }
+
+/* ====================== BACKUP AUTOMÁTICO EM PASTA LOCAL ====================== */
+function configurarBackupAutomatico(){
+  if(!window.FsBackup||!FsBackup.isSupported()){
+    abrirModal(`<h3>📁 Backup automático</h3>
+      <div class="legend">Esse recurso usa um jeito do navegador salvar arquivo direto numa pasta, disponível hoje só no Chrome/Edge (não funciona no Safari nem no app do iPhone). Continue usando o "💾 Backup geral" manualmente — o lembrete a cada 30 dias continua ativo.</div>
+      <div class="modal-actions"><button onclick="fecharModal()">Entendi</button></div>`);
+    return;
+  }
+  FsBackup.carregarHandle().then(handle=>{
+    if(handle){
+      abrirModal(`<h3>📁 Backup automático</h3>
+        <div class="legend">Já está configurado. O app salva uma cópia atualizada automaticamente (no máximo 1x por dia) enquanto você usa — sem precisar lembrar de exportar.</div>
+        <div class="modal-actions" style="justify-content:space-between">
+          <button class="del" onclick="desativarBackupAutomatico()">Desativar</button>
+          <div style="display:flex;gap:8px">
+            <button onclick="fecharModal()">Fechar</button>
+            <button style="background:var(--azul);color:#fff" onclick="ativarBackupAutomatico()">Trocar pasta</button>
+          </div>
+        </div>`);
+    } else {
+      abrirModal(`<h3>📁 Backup automático</h3>
+        <div class="legend">Escolha uma pasta no seu computador (ex.: uma pasta já sincronizada com OneDrive/Google Drive). O app vai salvar uma cópia atualizada dos seus pacientes ali automaticamente, no máximo 1x por dia — sem sair do navegador, sem passar por nenhum servidor.</div>
+        <div class="modal-actions"><button onclick="fecharModal()">Cancelar</button><button style="background:var(--azul);color:#fff" onclick="ativarBackupAutomatico()">Escolher pasta</button></div>`);
+    }
+  });
+}
+async function ativarBackupAutomatico(){
+  try{
+    const handle=await FsBackup.escolherPasta();
+    const ok=await FsBackup.pedirPermissao(handle); // pedido real de permissão — só funciona aqui, num clique do usuário
+    if(!ok){ alert('Permissão não concedida — o backup automático não foi ativado.'); return; }
+    await FsBackup.escreverBackup(handle,'ficha-fisio-backup-automatico.json',JSON.stringify(DB,null,2));
+    localStorage.setItem('ff_lastBackup',String(Date.now()));
+    localStorage.setItem('ff_lastAutoBackupFS',String(Date.now()));
+    esconderBannerBackup();
+    fecharModal();
+    flash('Backup automático ativado ✓');
+  }catch(e){ if(e&&e.name!=='AbortError') alert('Não consegui configurar o backup automático: '+(e.message||e)); }
+}
+async function desativarBackupAutomatico(){
+  try{ await FsBackup.removerHandle(); }catch(e){}
+  fecharModal();
+  flash('Backup automático desativado');
+}
+async function tentarBackupAutomaticoDiario(){
+  if(!window.FsBackup||!FsBackup.isSupported()) return;
+  const last=Number(localStorage.getItem('ff_lastAutoBackupFS')||0);
+  if(Date.now()-last<20*3600000) return; // no máximo 1x por dia
+  try{
+    const handle=await FsBackup.carregarHandle();
+    if(!handle) return;
+    // nunca chama pedirPermissao aqui — fora de um clique do usuário o navegador
+    // bloqueia/ignora o pedido; se a permissão não estiver mais concedida, o app
+    // simplesmente não escreve (o lembrete manual continua como rede de segurança)
+    const permitido=await FsBackup.temPermissaoSilenciosa(handle);
+    if(!permitido) return;
+    await FsBackup.escreverBackup(handle,'ficha-fisio-backup-automatico.json',JSON.stringify(DB,null,2));
+    localStorage.setItem('ff_lastBackup',String(Date.now()));
+    localStorage.setItem('ff_lastAutoBackupFS',String(Date.now()));
+  }catch(e){ /* silencioso — é um recurso de conveniência em segundo plano */ }
+}
 /* Validação mínima de schema antes de aceitar um arquivo importado — sem isso um
    JSON malformado (campo com tipo errado, paciente sem id, etc.) conseguia corromper
    o DB inteiro silenciosamente, já que o resto do app assume que DB.pacientes é
@@ -1765,7 +1876,7 @@ function validarFichaUnica(obj){
 function importarJSON(e){
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{try{
+  r.onload=async()=>{try{
     const obj=JSON.parse(r.result);
     if(obj&&obj.pacientes){ // backup geral
       const erro=validarBackupGeral(obj);
@@ -1778,7 +1889,7 @@ function importarJSON(e){
       const p=criarRegistro(obj.campos.id_nome||'Paciente importado', obj); DB.atualId=p.id;
       flash('Ficha importada como novo paciente');
     } else { alert('Arquivo não reconhecido.'); e.target.value=''; return; }
-    persistDB(); location.reload();
+    await persistDB(); location.reload();
   }catch(err){alert('Arquivo inválido');}};
   r.readAsText(f);
 }
@@ -1895,6 +2006,7 @@ bindCampos();
 atualizarSeletorPacientes();
 carregarClinica();
 checarBannerBackup();
+tentarBackupAutomaticoDiario();
 window.addEventListener('afterprint',()=>marcarVazios(false));
 
 // Idade automática a partir da data de nascimento
@@ -2000,6 +2112,64 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     const s=$('btnSair'); if(s) s.style.display = estado==='app'?'':'none';
     const c=$('btnConfig'); if(c) c.style.display = estado==='app'?'':'none';
   }
+  // Chamado sempre que checarAcesso decide que o usuário TEM acesso (trial ou
+  // assinatura ativa). Antes de liberar a tela de verdade, busca a chave que
+  // decifra o DB local (Edge Function `licenca`) — sem ela, dado real cifrado
+  // não abre nem removendo a classe "locked" no DevTools. Se o dado ainda estiver
+  // em texto puro (function não deployada ainda, ou login desligado), não bloqueia
+  // ninguém: entra normal e só passa a cifrar dali pra frente.
+  async function entrarNoApp(session){
+    const r=await tentarDesbloquear(session);
+    if(r.ok){ telas('app'); return true; }
+    alert(r.erro);
+    telas('login');
+    return false;
+  }
+  // Cache local (por época/mês) da chave já obtida — sem isso, recarregar o app
+  // offline bloquearia até quem já pagou, quebrando a promessa de "funciona
+  // offline" do PWA. Só é usado quando a rede falha de verdade (ver abaixo);
+  // uma resposta explícita 403 da function (trial acabou, sem assinatura) NUNCA
+  // cai pro cache, senão cancelar a assinatura nunca revogaria nada de fato.
+  function chavesLicencaCache(){ try{ return JSON.parse(localStorage.getItem('fisio_licencaCache'))||{}; }catch(e){ return {}; } }
+  function salvarChaveLicenca(epoch,chave){
+    const c=chavesLicencaCache(); c[epoch]=chave;
+    const epocas=Object.keys(c).sort(); while(epocas.length>3) delete c[epocas.shift()];
+    localStorage.setItem('fisio_licencaCache',JSON.stringify(c));
+  }
+  function chaveLicencaEmCache(){
+    const c=chavesLicencaCache(); const epocas=Object.keys(c).sort();
+    return epocas.length ? c[epocas[epocas.length-1]] : null;
+  }
+  async function tentarDesbloquear(session){
+    if(!window.DbCrypto) return {ok:true};
+    let chave=null;
+    try{
+      const res=await comTimeout(fetch(window.SUPA_URL+'/functions/v1/licenca',{
+        method:'POST', headers:{Authorization:'Bearer '+session.access_token, apikey:window.SUPA_ANON}
+      }),8000);
+      if(res.ok){
+        const data=await res.json(); chave=data.chave;
+        if(chave&&data.epoch) salvarChaveLicenca(data.epoch,chave);
+      } else if(res.status===403){
+        // negado de propósito pelo servidor (trial acabou, sem assinatura) —
+        // não é falha de rede, não recorre ao cache
+        if(_dbCifradoBruto) return {ok:false, erro:'Sem acesso: o período de teste acabou e não há assinatura ativa. Assine pra continuar usando o app com os dados que você já tem salvos.'};
+        return {ok:true};
+      }
+      // qualquer outro status (function ainda não deployada = 404, erro 500 etc.)
+      // cai no mesmo tratamento de "não deu pra confirmar agora" abaixo
+    }catch(e){ /* sem internet */ }
+    if(!chave) chave=chaveLicencaEmCache();
+    if(chave){
+      const ok=await desbloquearDBComChave(chave);
+      if(ok){ aplicarFichaNaUI(); atualizarSeletorPacientes(); carregarClinica(); return {ok:true}; }
+      return {ok:false, erro:'Não consegui abrir os dados salvos com a chave disponível. Recarregue a página. Se o problema continuar, não faça mais alterações e peça suporte antes.'};
+    }
+    if(_dbCifradoBruto){
+      return {ok:false, erro:'Não consegui verificar sua assinatura pra abrir os dados salvos (sem internet, e nenhuma chave válida salva ainda neste navegador). Verifique sua conexão e recarregue a página.'};
+    }
+    return {ok:true}; // sem chave, mas também sem dado cifrado esperando — segue normal (legado/ainda não migrado)
+  }
   if(!window.AUTH_ATIVO){ telas('app'); return; }   // login desligado → abre normal
   telas('login');                                   // garante que nunca fica em branco
   { const pp=$('payPreco'); if(pp&&window.PAY_PRECO) pp.textContent=window.PAY_PRECO; }
@@ -2064,7 +2234,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     const diasTrial=lerTrial(uid);
     // Trial ativo → acesso imediato; verifica assinatura em segundo plano
     if(diasTrial!==null&&diasTrial>0){
-      telas('app');mostrarBannerTrial(diasTrial);
+      if(await entrarNoApp(session)) mostrarBannerTrial(diasTrial);
       comTimeout(sb.from('assinantes').select('status,validade').eq('id',uid).maybeSingle(),6000)
         .then(({data})=>{const ok=!!(data&&data.status==='ativo'&&(!data.validade||new Date(data.validade)>=new Date()));gravarCache(uid,ok);if(ok)esconderBannerTrial();})
         .catch(()=>{});
@@ -2072,23 +2242,23 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     }
     // Trial expirado ou sem trial → verificar assinatura
     const cached=lerCache(uid);
-    if(cached===true){telas('app');return;}
+    if(cached===true){await entrarNoApp(session);return;}
     if(cached===false&&diasTrial===0){telas('pay');mostrarMsgTrialExpirado(session.user.email);return;}
     try{
       const {data,error}=await comTimeout(sb.from('assinantes').select('status,validade').eq('id',uid).maybeSingle());
       if(error)throw error;
       const ativo=!!(data&&data.status==='ativo'&&(!data.validade||new Date(data.validade)>=new Date()));
       gravarCache(uid,ativo);
-      if(ativo){telas('app');return;}
+      if(ativo){await entrarNoApp(session);return;}
       if(diasTrial===null){
-        iniciarTrial(uid);telas('app');mostrarBannerTrial(TRIAL_DIAS);
+        iniciarTrial(uid);if(await entrarNoApp(session)) mostrarBannerTrial(TRIAL_DIAS);
       }else{
         telas('pay');mostrarMsgTrialExpirado(session.user.email);
       }
     }catch(e){
-      if(cached!==null){telas(cached?'app':'pay');return;}
+      if(cached!==null){ if(cached) await entrarNoApp(session); else telas('pay'); return;}
       if(diasTrial===null){
-        iniciarTrial(uid);telas('app');mostrarBannerTrial(TRIAL_DIAS);
+        iniciarTrial(uid);if(await entrarNoApp(session)) mostrarBannerTrial(TRIAL_DIAS);
       }else if(diasTrial===0){
         telas('pay');
         const pm=$('payMsg');if(pm){pm.textContent='Sem conexão para verificar a assinatura. ('+(e.message||e)+')';pm.className='auth-msg err';}
