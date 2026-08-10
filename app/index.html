@@ -2226,7 +2226,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     const pm=$('payMsg');
     if(pm){pm.textContent='Seu período de teste de '+TRIAL_DIAS+' dias terminou. Assine para continuar usando o Ficha Fisio.';pm.className='auth-msg err';}
     const pe=$('payEmail');
-    if(pe&&email){pe.innerHTML='⚠️ Na hora de pagar, use o e-mail desta conta:<br><b>'+email+'</b>';pe.classList.add('show');}
+    if(pe&&email){pe.innerHTML='⚠️ Na hora de pagar, use o e-mail desta conta:<br><b>'+esc(email)+'</b>';pe.classList.add('show');}
   }
   async function checarAcesso(session){
     if(!session){telas('login');return;}

@@ -2,6 +2,39 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 3) — auditoria de segunda camada
+
+- Corrigido (crítico): a function `licenca` (deployada nesta data) não respondia CORS —
+  testado direto com curl comparando contra `send-reset` (que funciona) e confirmado que o
+  navegador bloquearia toda chamada real. Adicionado tratamento de `OPTIONS` e cabeçalhos
+  `Access-Control-Allow-*` em todas as respostas. **Precisa redeployar a function** pra a
+  correção valer (o código antigo continua no ar até isso acontecer).
+- Testado abuso da function `licenca` com curl: sem token, token corrompido e um JWT forjado
+  (assinatura falsa) — os três foram rejeitados corretamente (401), confirmando que
+  `sb.auth.getUser()` valida a assinatura de verdade, não só o formato do token.
+- Testado RLS de `trial_starts` direto com a anon key: tentativa de INSERT sem sessão real foi
+  bloqueada pelo Postgres com "new row violates row-level security policy" — confirma que só a
+  function (service role) escreve ali, ninguém consegue forjar a própria data de início do trial.
+- Corrigido: e-mail da conta (`session.user.email`) agora passa por `esc()` antes de ir pro
+  `innerHTML` da tela de pagamento — risco era baixo (Supabase valida formato de e-mail no
+  cadastro) mas o custo da correção é zero.
+- Endurecido: `licenca` agora importa `supabase-js` via `npm:` em vez de `esm.sh` — resolve
+  direto do registro do npm, sem depender de mais uma camada de transformação de CDN no meio.
+- Revisão completa de todo `innerHTML`/`insertAdjacentHTML` do repositório (app, landing,
+  libs novas) — nenhum outro ponto sem escape encontrado.
+- **Pendente, precisa de verificação manual no painel:** não consegui confirmar de fora se a
+  RLS da tabela `assinantes` impede um usuário autenticado de dar `UPDATE` no próprio
+  `status` pra `'ativo'` — testar isso exige um token de usuário real logado, que não tenho.
+  Verificar em Table Editor → assinantes → RLS Policies no painel do Supabase.
+- **Avaliado e não implementado:** CSP via meta tag. O app usa `onclick=` e `<script>`/`<style>`
+  inline extensivamente, então uma CSP precisaria de `'unsafe-inline'` em `script-src`/
+  `style-src` — o que bloquearia scripts EXTERNOS não autorizados (proteção real) mas não
+  bloquearia um payload de XSS injetado inline (a limitação real está na arquitetura do app,
+  não em não ter tentado). Meta tag também não suporta `frame-ancestors` (proteção contra
+  clickjacking só funciona via header HTTP, que o GitHub Pages não permite). Draft da política
+  ficou pronto mas não foi aplicado — teria que confirmar o domínio exato de ingest do Sentry
+  antes, pra não quebrar o monitoramento de erros silenciosamente.
+
 ## 2026-08-10 (parte 2)
 
 - Adicionado: controle de assinatura sem bypass client-side. O DB local agora pode ser cifrado

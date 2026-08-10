@@ -12,12 +12,33 @@
 // APP_UNLOCK_SECRET precisa ser criado manualmente nas secrets da function
 // (um valor aleatório longo, gerado uma vez, nunca reaproveitado de outro lugar).
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.0'
+// npm: em vez de esm.sh — resolve direto do registro do npm (mesma origem já
+// confiada pelo pin do lado do navegador), sem depender da camada de transformação
+// de um CDN terceiro (esm.sh) no meio do caminho.
+import { createClient } from 'npm:@supabase/supabase-js@2.112.0'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const APP_UNLOCK_SECRET = Deno.env.get('APP_UNLOCK_SECRET') ?? ''
 const TRIAL_DIAS = 5
+
+// Sem isso, o navegador bloqueia a chamada antes mesmo dela funcionar: toda
+// requisição feita via fetch() de um site (fichafisio.com.br) pra outro domínio
+// (supabase.co) manda um preflight OPTIONS primeiro, e só segue com a chamada de
+// verdade se a resposta do OPTIONS disser explicitamente que aquele origin pode
+// chamar. Deno.serve não adiciona isso sozinho — precisa declarar à mão em toda
+// resposta (inclusive nas de erro), senão o navegador também descarta elas.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
 
 function b64url(bytes: Uint8Array): string {
   let bin = ''
@@ -35,19 +56,23 @@ async function chaveDoMes(userId: string, epoch: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   if (!APP_UNLOCK_SECRET || !SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: 'function não configurada' }), { status: 500 })
+    return jsonResponse({ error: 'function não configurada' }, 500)
   }
 
   const authHeader = req.headers.get('Authorization') ?? ''
   const token = authHeader.replace(/^Bearer\s+/i, '')
-  if (!token) return new Response(JSON.stringify({ error: 'sem sessão' }), { status: 401 })
+  if (!token) return jsonResponse({ error: 'sem sessão' }, 401)
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE)
 
   const { data: userData, error: userErr } = await sb.auth.getUser(token)
   if (userErr || !userData?.user) {
-    return new Response(JSON.stringify({ error: 'sessão inválida' }), { status: 401 })
+    return jsonResponse({ error: 'sessão inválida' }, 401)
   }
   const uid = userData.user.id
 
@@ -68,11 +93,11 @@ Deno.serve(async (req) => {
       }
     }
   } catch (_) {
-    return new Response(JSON.stringify({ error: 'erro ao verificar acesso' }), { status: 500 })
+    return jsonResponse({ error: 'erro ao verificar acesso' }, 500)
   }
 
   if (!liberado) {
-    return new Response(JSON.stringify({ error: 'sem acesso — trial expirado e sem assinatura ativa' }), { status: 403 })
+    return jsonResponse({ error: 'sem acesso — trial expirado e sem assinatura ativa' }, 403)
   }
 
   // a chave muda por mês (epoch) — permite revogar acesso num intervalo previsível
@@ -81,7 +106,5 @@ Deno.serve(async (req) => {
   const epoch = new Date().toISOString().slice(0, 7) // "AAAA-MM"
   const chave = await chaveDoMes(uid, epoch)
 
-  return new Response(JSON.stringify({ chave, epoch }), {
-    headers: { 'Content-Type': 'application/json' }
-  })
+  return jsonResponse({ chave, epoch }, 200)
 })
