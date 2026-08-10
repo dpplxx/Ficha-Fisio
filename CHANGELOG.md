@@ -2,6 +2,50 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 5) — auditoria final: correção de V1/V2/V3/V4
+
+Correções P0/P1 da auditoria de release-gate anterior (achados V1 a V4). Backup
+criado antes de mexer em qualquer arquivo: tag git `backup/pre-fix-v1-v2-v3-v4-20260810`.
+
+- **V1 (crítico) — bug de rotação mensal da chave, corrigido.** A chave que cifra o
+  banco local passava a ser diferente todo mês (derivada com o "epoch" AAAA-MM); sem
+  nenhum código de recriptografia, isso ia travar TODO cliente pagante fora do
+  próprio prontuário no primeiro login de setembro. Corrigido escolhendo a
+  arquitetura de menor risco: a chave de criptografia do banco agora é **estável
+  por usuário** (não depende mais do mês) — a Edge Function `licenca` só usa o
+  "epoch" pra calcular, à parte, uma **chave-ponte** (`chaveAntiga`) que serve só
+  pra abrir, uma única vez, um banco que já tenha sido cifrado com o esquema antigo,
+  e recifrar na hora com a chave estável. `app/lib/db-crypto.js` ganhou
+  `abrirComMigracao()` (tenta a chave atual, cai pra antiga só se a atual falhar,
+  nunca sobrescreve nada se nenhuma das duas abrir) — testado com 6 casos novos em
+  `tests/db-crypto.test.js` (dado íntegro após migrar, chave errada, chave de outra
+  conta, ciphertext adulterado, ausência de chave-ponte).
+- **V3 (alto) — bypass de trial/assinatura via localStorage, corrigido.**
+  `tentarDesbloquear()` só bloqueava o acesso quando já existia dado local cifrado
+  esperando chave — um 403 explícito do servidor (trial acabado, sem assinatura)
+  era ignorado se não houvesse nada cifrado ainda (ex.: navegador novo, ou
+  localStorage limpo), liberando o app de qualquer jeito com um trial local
+  reiniciado. Agora um 403 explícito **sempre** bloqueia, independente de existir
+  ou não dado cifrado local; o fallback offline (cache de chave) só é consultado
+  em falha de rede/timeout, nunca depois de uma negação explícita. Em
+  `checarAcesso()`, `iniciarTrial()` (que grava um novo início de trial local) só
+  roda **depois** que `entrarNoApp()` confirma acesso de verdade pelo servidor —
+  antes disso, "não achei trial local" nunca mais é tratado como "é a primeira vez".
+- **V2 (alto) — `notificar-signup` publicada divergia do código do repositório.**
+  O teste ao vivo da auditoria mostrou que a function publicada no Supabase
+  aceitava chamadas sem o `x-webhook-secret` correto (devolvia 200 mesmo com
+  segredo errado ou ausente) — o código do repositório já tinha essa checagem
+  desde 2026-08-03, mas nunca tinha sido redeployado. Sem mudança de código aqui;
+  precisa de redeploy manual (mesmo processo da `licenca`).
+- **V4 (alto) — XSS armazenado em `financeiro.data`/`financeiro.valor`, corrigido.**
+  `openFinForm()` escapava `desc`/`categoria`/`paciente` mas não `data`/`valor` —
+  um backup JSON malicioso com HTML nesses dois campos injetava atributo
+  (`" onfocus="..." autofocus`) executável ao abrir o lançamento. Aplicado
+  `escAttr()` nos dois campos. Confirmado ao vivo (não só lendo o código): o
+  payload antes criava um `onfocus` de verdade no elemento (`typeof el.onfocus
+  === 'function'` → `true`, disparava com `dispatchEvent`); depois da correção,
+  nenhum handler é criado e o conteúdo fica como texto inerte no atributo.
+
 ## 2026-08-10 (parte 4) — vulnerabilidade crítica encontrada e corrigida no Supabase
 
 **Não é mudança de código — é mudança de configuração direto no painel do Supabase, registrada aqui porque foi grave.**

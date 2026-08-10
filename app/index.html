@@ -1080,22 +1080,27 @@ async function persistDB(){
 
 /* Decifra o DB salvo assim que uma chave (vinda da Edge Function `licenca`) fica
    disponível. Se o dado salvo ainda estava em texto puro (legado, ou login/assinatura
-   desligados), só passa a cifrar dali pra frente — nunca reescreve nada às cegas. */
-async function desbloquearDBComChave(chave){
+   desligados), só passa a cifrar dali pra frente — nunca reescreve nada às cegas.
+   chaveAntiga é só uma ponte: se o blob salvo foi cifrado com o esquema antigo
+   (chave por mês, descontinuado — ver CHANGELOG), abre com ela e recifra na hora
+   com a chave atual, que já fica estável dali pra sempre (não muda mais por mês). */
+async function desbloquearDBComChave(chave,chaveAntiga){
   _dbUnlockKey=chave;
   if(_dbCifradoBruto){
+    const r=await DbCrypto.abrirComMigracao(_dbCifradoBruto,chave,chaveAntiga);
+    if(!r.ok) return false; // nenhuma chave abriu o que estava salvo — não sobrescreve nada
     try{
-      const texto=await DbCrypto.decryptString(_dbCifradoBruto,chave);
-      const s=JSON.parse(texto);
+      const s=JSON.parse(r.texto);
       if(!s||!s.pacientes) throw new Error('formato inesperado após decifrar');
       DB=s; _dbCifradoBruto=null;
       if(!DB.pacientes.length){const p=criarRegistro('Novo paciente'); DB.atualId=p.id;}
       if(!DB.atualId||!pacienteAtual()) DB.atualId=DB.pacientes[0].id;
       DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
       dados=Object.assign(novaFicha(), pacienteAtual().dados);
+      if(r.migrou) await persistDB(); // veio da chave antiga — recifra já com a atual
       return true;
     }catch(e){
-      return false; // chave não abriu o que estava salvo — não sobrescreve nada
+      return false; // texto decifrado não é um DB válido — não sobrescreve nada
     }
   }
   // dado ainda em texto puro: faz um backup de segurança automático ANTES de cifrar
@@ -1587,9 +1592,9 @@ function openFinForm(idx){
   const f = idx!=null ? DB.financeiro[idx] : {data:hojeISO(),tipo:'Entrada',valor:'',status:'Pago',desc:'Atendimento',categoria:'',forma:'PIX',paciente:nomePacienteAtual()};
   abrirModal(`<h3>${idx!=null?'Editar':'Novo'} lançamento</h3>
     <div class="grid g2">
-      <label class="field">Data<input type="date" id="f_data" value="${f.data||''}"></label>
+      <label class="field">Data<input type="date" id="f_data" value="${escAttr(f.data)}"></label>
       <label class="field">Tipo<select id="f_tipo">${['Entrada','Saída'].map(o=>`<option ${f.tipo===o?'selected':''}>${o}</option>`).join('')}</select></label>
-      <label class="field">Valor (R$)<input type="number" step="0.01" id="f_valor" value="${f.valor||''}"></label>
+      <label class="field">Valor (R$)<input type="number" step="0.01" id="f_valor" value="${escAttr(f.valor)}"></label>
       <label class="field">Status<select id="f_status">${['Pago','Pendente'].map(o=>`<option ${f.status===o?'selected':''}>${o}</option>`).join('')}</select></label>
     </div>
     <label class="field" style="margin-top:8px">Descrição<input id="f_desc" value="${escAttr(f.desc)}"></label>
@@ -2121,54 +2126,51 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   async function entrarNoApp(session){
     const r=await tentarDesbloquear(session);
     if(r.ok){ telas('app'); return true; }
+    if(r.negado){ telas('pay'); mostrarMsgTrialExpirado(session.user.email); return false; }
     alert(r.erro);
     telas('login');
     return false;
   }
-  // Cache local (por época/mês) da chave já obtida — sem isso, recarregar o app
-  // offline bloquearia até quem já pagou, quebrando a promessa de "funciona
-  // offline" do PWA. Só é usado quando a rede falha de verdade (ver abaixo);
-  // uma resposta explícita 403 da function (trial acabou, sem assinatura) NUNCA
-  // cai pro cache, senão cancelar a assinatura nunca revogaria nada de fato.
-  function chavesLicencaCache(){ try{ return JSON.parse(localStorage.getItem('fisio_licencaCache'))||{}; }catch(e){ return {}; } }
-  function salvarChaveLicenca(epoch,chave){
-    const c=chavesLicencaCache(); c[epoch]=chave;
-    const epocas=Object.keys(c).sort(); while(epocas.length>3) delete c[epocas.shift()];
-    localStorage.setItem('fisio_licencaCache',JSON.stringify(c));
-  }
-  function chaveLicencaEmCache(){
-    const c=chavesLicencaCache(); const epocas=Object.keys(c).sort();
-    return epocas.length ? c[epocas[epocas.length-1]] : null;
-  }
+  // Cache local da chave (agora estável — não muda por mês, ver CHANGELOG) usada só
+  // pra continuar funcionando offline com quem JÁ teve acesso confirmado antes. Só é
+  // usado quando a rede falha de verdade (timeout/sem conexão) — uma resposta
+  // explícita 403 da function (trial acabou, sem assinatura) NUNCA cai pro cache
+  // nem libera o app, tenha ou não dado cifrado local esperando (ver tentarDesbloquear).
+  function chaveLicencaEmCache(){ try{ return localStorage.getItem('fisio_chaveDB')||null; }catch(e){ return null; } }
+  function salvarChaveLicenca(chave){ try{ localStorage.setItem('fisio_chaveDB',chave); }catch(e){} }
   async function tentarDesbloquear(session){
     if(!window.DbCrypto) return {ok:true};
-    let chave=null;
+    let chave=null, chaveAntiga=null, negadoExplicito=false;
     try{
       const res=await comTimeout(fetch(window.SUPA_URL+'/functions/v1/licenca',{
         method:'POST', headers:{Authorization:'Bearer '+session.access_token, apikey:window.SUPA_ANON}
       }),8000);
       if(res.ok){
-        const data=await res.json(); chave=data.chave;
-        if(chave&&data.epoch) salvarChaveLicenca(data.epoch,chave);
+        const data=await res.json(); chave=data.chave; chaveAntiga=data.chaveAntiga;
+        if(chave) salvarChaveLicenca(chave);
       } else if(res.status===403){
-        // negado de propósito pelo servidor (trial acabou, sem assinatura) —
-        // não é falha de rede, não recorre ao cache
-        if(_dbCifradoBruto) return {ok:false, erro:'Sem acesso: o período de teste acabou e não há assinatura ativa. Assine pra continuar usando o app com os dados que você já tem salvos.'};
-        return {ok:true};
+        // negado de propósito pelo servidor (trial acabou, sem assinatura) — nunca
+        // é tratado como falha de rede, e NUNCA libera o app, mesmo sem dado local
+        // cifrado esperando (esse "sem nada pra proteger ainda" não é autorização).
+        negadoExplicito=true;
       }
       // qualquer outro status (function ainda não deployada = 404, erro 500 etc.)
       // cai no mesmo tratamento de "não deu pra confirmar agora" abaixo
-    }catch(e){ /* sem internet */ }
-    if(!chave) chave=chaveLicencaEmCache();
+    }catch(e){ /* timeout / sem internet */ }
+
+    if(negadoExplicito){
+      return {ok:false, negado:true, erro:'Sem acesso: o período de teste acabou e não há assinatura ativa. Assine pra continuar usando o app.'};
+    }
+    if(!chave) chave=chaveLicencaEmCache(); // só chega aqui por timeout/erro de rede, nunca após um 403
     if(chave){
-      const ok=await desbloquearDBComChave(chave);
+      const ok=await desbloquearDBComChave(chave,chaveAntiga);
       if(ok){ aplicarFichaNaUI(); atualizarSeletorPacientes(); carregarClinica(); return {ok:true}; }
       return {ok:false, erro:'Não consegui abrir os dados salvos com a chave disponível. Recarregue a página. Se o problema continuar, não faça mais alterações e peça suporte antes.'};
     }
-    if(_dbCifradoBruto){
-      return {ok:false, erro:'Não consegui verificar sua assinatura pra abrir os dados salvos (sem internet, e nenhuma chave válida salva ainda neste navegador). Verifique sua conexão e recarregue a página.'};
-    }
-    return {ok:true}; // sem chave, mas também sem dado cifrado esperando — segue normal (legado/ainda não migrado)
+    // Sem chave nova (rede falhou) e sem chave em cache: não existe nenhuma
+    // autorização já confirmada neste navegador pra confiar — não libera o app
+    // só porque "ainda não tem dado cifrado local pra proteger".
+    return {ok:false, erro:'Não foi possível verificar sua assinatura (sem conexão). Verifique a internet e recarregue a página.'};
   }
   if(!window.AUTH_ATIVO){ telas('app'); return; }   // login desligado → abre normal
   telas('login');                                   // garante que nunca fica em branco
@@ -2251,14 +2253,21 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
       gravarCache(uid,ativo);
       if(ativo){await entrarNoApp(session);return;}
       if(diasTrial===null){
-        iniciarTrial(uid);if(await entrarNoApp(session)) mostrarBannerTrial(TRIAL_DIAS);
+        // Não sabemos ainda se isso é realmente a primeira vez — quem sabe de
+        // verdade é o trial_starts no servidor (checado dentro de entrarNoApp via
+        // a function licenca). Só grava um trial local depois que o servidor
+        // confirmar acesso de fato; se negar (403), entrarNoApp já mostra a tela
+        // de pagamento e nenhum trial falso fica registrado neste navegador.
+        const entrou=await entrarNoApp(session);
+        if(entrou){ iniciarTrial(uid); mostrarBannerTrial(TRIAL_DIAS); }
       }else{
         telas('pay');mostrarMsgTrialExpirado(session.user.email);
       }
     }catch(e){
       if(cached!==null){ if(cached) await entrarNoApp(session); else telas('pay'); return;}
       if(diasTrial===null){
-        iniciarTrial(uid);if(await entrarNoApp(session)) mostrarBannerTrial(TRIAL_DIAS);
+        const entrou=await entrarNoApp(session);
+        if(entrou){ iniciarTrial(uid); mostrarBannerTrial(TRIAL_DIAS); }
       }else if(diasTrial===0){
         telas('pay');
         const pm=$('payMsg');if(pm){pm.textContent='Sem conexão para verificar a assinatura. ('+(e.message||e)+')';pm.className='auth-msg err';}

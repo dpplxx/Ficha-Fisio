@@ -45,7 +45,28 @@
     return new TextDecoder().decode(plain);
   }
 
-  const api = { encryptString, decryptString, ehCifrado };
+  /* Abre um blob cifrado tentando a chave atual primeiro; se falhar (ex.: o blob
+     foi cifrado com uma chave antiga, de um esquema já descontinuado) e uma
+     chaveAntiga foi passada, tenta com ela. Não decide nada sobre persistência —
+     só diz se abriu, com qual texto, e se a chave usada foi a antiga (pra quem
+     chamar saber que precisa recifrar com a chave atual). Nunca lança exceção:
+     falha em ambas as chaves só significa "não abriu". */
+  async function abrirComMigracao(blobCifrado, chaveAtual, chaveAntiga) {
+    try {
+      const texto = await decryptString(blobCifrado, chaveAtual);
+      return { ok: true, texto, migrou: false };
+    } catch (e) {
+      if (!chaveAntiga) return { ok: false };
+      try {
+        const texto = await decryptString(blobCifrado, chaveAntiga);
+        return { ok: true, texto, migrou: true };
+      } catch (e2) {
+        return { ok: false };
+      }
+    }
+  }
+
+  const api = { encryptString, decryptString, ehCifrado, abrirComMigracao };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else global.DbCrypto = api;
 })(typeof window !== 'undefined' ? window : globalThis);

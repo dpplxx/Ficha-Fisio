@@ -46,12 +46,14 @@ function b64url(bytes: Uint8Array): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-async function chaveDoMes(userId: string, epoch: string): Promise<string> {
+// HMAC(userId + ':' + sal, APP_UNLOCK_SECRET) — mesma função pras duas chaves abaixo,
+// só muda o "sal" usado.
+async function chaveHmac(userId: string, sal: string): Promise<string> {
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw', enc.encode(APP_UNLOCK_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   )
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(userId + ':' + epoch))
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(userId + ':' + sal))
   return b64url(new Uint8Array(sig))
 }
 
@@ -100,11 +102,20 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'sem acesso — trial expirado e sem assinatura ativa' }, 403)
   }
 
-  // a chave muda por mês (epoch) — permite revogar acesso num intervalo previsível
-  // sem quebrar uso offline dentro do mesmo período (o app guarda a chave do mês
-  // corrente em cache pra continuar funcionando sem internet)
-  const epoch = new Date().toISOString().slice(0, 7) // "AAAA-MM"
-  const chave = await chaveDoMes(uid, epoch)
+  // Chave de criptografia do banco local: ESTÁVEL por usuário — não muda com o mês.
+  // Rotacionar por época parecia bom pra "revogar num intervalo previsível", mas na
+  // prática só a autorização acima (liberado/não liberado, checada em toda chamada)
+  // já controla o acesso; trocar a chave todo mês só quebrava a decriptação de quem
+  // já tinha sido cifrado no mês anterior, travando cliente pagante fora do próprio
+  // prontuário. Ver CHANGELOG — correção do bug de rotação mensal.
+  const chave = await chaveHmac(uid, 'chave-db-estavel-v1')
 
-  return jsonResponse({ chave, epoch }, 200)
+  // Só serve pra abrir (uma única vez) um banco que já tinha sido cifrado com o
+  // esquema antigo (chave por "AAAA-MM"), migrar pra chave estável acima e nunca
+  // mais ser usada. Não é uma chave "de verdade" nova — é a mesma conta antiga,
+  // calculada de novo, só como ponte de migração.
+  const epochAtual = new Date().toISOString().slice(0, 7)
+  const chaveAntiga = await chaveHmac(uid, epochAtual)
+
+  return jsonResponse({ chave, chaveAntiga }, 200)
 })
