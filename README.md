@@ -52,6 +52,25 @@ npm test
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda isso a cada push/PR na `main`, mas **não bloqueia o deploy do GitHub Pages** — o Pages publica direto no push, independente do resultado do CI. Se quiser um gate de verdade (só publica se os testes passarem), a alternativa é trocar a fonte do GitHub Pages de "branch" pra "GitHub Actions" nas configurações do repositório e fazer o deploy acontecer como um step depois dos testes — isso é uma mudança de configuração do repositório, não de código.
 
+## Limitações conhecidas (decisão de produto, não bug)
+
+Duas coisas que **parecem** falha mas são consequência direta e aceita conscientemente da
+decisão de manter o app 100% local (dado do paciente nunca sai do navegador — é a base da
+proposta de privacidade/LGPD do produto). Registrado aqui pra quem for mexer no código não
+tentar "corrigir" isso sem entender a troca envolvida:
+
+- **Controle de assinatura é só client-side.** O bloqueio de tela (`html.locked`, ver comentário
+  no CSS) é `visibility:hidden` — qualquer pessoa com DevTools consegue remover a classe e usar
+  o app sem pagar, ou forjar o cache de assinatura no localStorage. Fechar isso de verdade exige
+  que uma Edge Function passe a controlar o que é *entregue* (não só a validação), o que muda o
+  modelo de confiança do app — decisão pendente, revisitar se o bypass começar a doer no caixa.
+- **Sem redundância de dado.** Tudo mora numa única chave do `localStorage` de um navegador.
+  Limpar dados do navegador, trocar de aparelho ou formatar o computador sem ter feito backup
+  geral = perda irrecuperável do prontuário. O único mitigador hoje é o lembrete de backup
+  (`checarBannerBackup`, a cada 30 dias sem exportar) — reforce isso na orientação ao
+  fisioterapeuta. Resolver de verdade exigiria sync criptografado ponta-a-ponta pra nuvem, o que
+  também é decisão pendente (mesma razão: tensiona com a promessa de privacidade atual).
+
 ## Edge Functions (Supabase)
 
 As functions em `supabase-functions/` são deployadas manualmente pelo editor do dashboard do Supabase (não há CI configurado pra isso ainda). Se editar localmente, copie o conteúdo atualizado pro editor do dashboard e clique em "Deploy".
