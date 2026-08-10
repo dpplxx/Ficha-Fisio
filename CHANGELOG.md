@@ -2,6 +2,20 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 6) — bug achado testando o próprio fix ao vivo
+
+Ao reverificar o V3 direto no site publicado (não só lendo o código), o cache de
+chave (`fisio_chaveDB`, introduzido na parte 5) não era isolado por usuário — era
+uma única chave de `localStorage` pro navegador inteiro. Resultado: numa conta
+nova, nunca autorizada, com a rede falhando, o app entrava mesmo assim se
+qualquer OUTRA conta já tivesse feito login legítimo antes no mesmo
+navegador/dispositivo (o `chaveLicencaEmCache()` achava a chave de cache de
+outra conta e tratava como se fosse autorização própria). Confirmado ao vivo em
+fichafisio.com.br: conta C (recém-criada) entrou no app com a rede da `licenca`
+mockada pra falhar, só porque a conta B tinha logado antes no mesmo teste.
+Corrigido isolando a chave por uid (`fisio_chaveDB_<uid>`). Reconfirmado ao vivo
+depois da correção — ver relatório final.
+
 ## 2026-08-10 (parte 5) — auditoria final: correção de V1/V2/V3/V4
 
 Correções P0/P1 da auditoria de release-gate anterior (achados V1 a V4). Backup

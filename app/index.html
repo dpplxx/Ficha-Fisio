@@ -2136,10 +2136,14 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   // usado quando a rede falha de verdade (timeout/sem conexão) — uma resposta
   // explícita 403 da function (trial acabou, sem assinatura) NUNCA cai pro cache
   // nem libera o app, tenha ou não dado cifrado local esperando (ver tentarDesbloquear).
-  function chaveLicencaEmCache(){ try{ return localStorage.getItem('fisio_chaveDB')||null; }catch(e){ return null; } }
-  function salvarChaveLicenca(chave){ try{ localStorage.setItem('fisio_chaveDB',chave); }catch(e){} }
+  // Chave de armazenamento inclui o uid: sem isso, trocar de conta no mesmo
+  // navegador/dispositivo faria uma conta nova (nunca autorizada) herdar a chave
+  // em cache de uma conta anterior — achado ao testar ao vivo, ver CHANGELOG.
+  function chaveLicencaEmCache(uid){ try{ return localStorage.getItem('fisio_chaveDB_'+uid)||null; }catch(e){ return null; } }
+  function salvarChaveLicenca(uid,chave){ try{ localStorage.setItem('fisio_chaveDB_'+uid,chave); }catch(e){} }
   async function tentarDesbloquear(session){
     if(!window.DbCrypto) return {ok:true};
+    const uid=session.user.id;
     let chave=null, chaveAntiga=null, negadoExplicito=false;
     try{
       const res=await comTimeout(fetch(window.SUPA_URL+'/functions/v1/licenca',{
@@ -2147,7 +2151,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
       }),8000);
       if(res.ok){
         const data=await res.json(); chave=data.chave; chaveAntiga=data.chaveAntiga;
-        if(chave) salvarChaveLicenca(chave);
+        if(chave) salvarChaveLicenca(uid,chave);
       } else if(res.status===403){
         // negado de propósito pelo servidor (trial acabou, sem assinatura) — nunca
         // é tratado como falha de rede, e NUNCA libera o app, mesmo sem dado local
@@ -2161,7 +2165,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     if(negadoExplicito){
       return {ok:false, negado:true, erro:'Sem acesso: o período de teste acabou e não há assinatura ativa. Assine pra continuar usando o app.'};
     }
-    if(!chave) chave=chaveLicencaEmCache(); // só chega aqui por timeout/erro de rede, nunca após um 403
+    if(!chave) chave=chaveLicencaEmCache(uid); // só chega aqui por timeout/erro de rede, nunca após um 403
     if(chave){
       const ok=await desbloquearDBComChave(chave,chaveAntiga);
       if(ok){ aplicarFichaNaUI(); atualizarSeletorPacientes(); carregarClinica(); return {ok:true}; }
