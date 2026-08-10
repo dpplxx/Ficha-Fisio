@@ -1,0 +1,11 @@
+{
+  "name": "ficha-fisio",
+  "private": true,
+  "description": "Sem build step pra rodar/editar o site (veja README.md). Este package.json existe só pra testes automatizados (Vitest) rodarem localmente e no CI — não é necessário pra publicar ou usar o app.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}

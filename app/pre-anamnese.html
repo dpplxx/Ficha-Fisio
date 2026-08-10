@@ -72,6 +72,7 @@ button{cursor:pointer;border:none;border-radius:10px;padding:15px;font-size:16px
   <div class="foot">Ficha Fisio · pré-avaliação</div>
 </main>
 
+<script src="lib/preanamnese-crypto.js"></script>
 <script>
 /* Número do fisioterapeuta (formato internacional: 55 + DDD + número). Vazio = o paciente escolhe o contato. */
 const FISIO_WHATS = new URLSearchParams(location.search).get('tel') || '';
@@ -86,27 +87,42 @@ function coletar(){
     an_hma:('Há quanto tempo: '+(v('tempo')||'-')+'. '+v('mais')).trim()
   };
 }
-function codigo(o){return 'FICHA::'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));}
-function resumo(o){
+/* Cifra o payload com a chave que veio no link (#k=...), pra ninguém que veja a
+   mensagem no WhatsApp conseguir ler os dados só decodificando Base64. Se por
+   algum motivo não houver chave (link antigo/incompleto) ou a criptografia falhar,
+   cai pro formato antigo — o envio nunca trava por causa disso. */
+async function codigo(o){
+  const keyB64 = window.PreAnamneseCrypto && window.PreAnamneseCrypto.keyFromLocationHash();
+  if (keyB64 && window.crypto && window.crypto.subtle) {
+    try { return await window.PreAnamneseCrypto.encryptJSON(o, keyB64); } catch(e) {}
+  }
+  return 'FICHA::'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+}
+async function resumo(o){
+  const cod = await codigo(o);
   return '*Pré-avaliação — '+(o.id_nome||'Paciente')+'*\n'+
     'Nascimento: '+(o.id_nasc||'-')+'\nTelefone: '+(o.id_tel||'-')+'\nProfissão: '+(o.id_prof||'-')+'\n'+
     '\n*Queixa:* '+(o.an_qp||'-')+'\n'+(o.an_hma||'')+'\n*Onde dói:* '+(o.dor_local||'-')+'\n*Dor (0-10):* '+(o.eva_repouso||'0')+'\n*Melhora:* '+(o.dor_melhora||'-')+'\n*Piora:* '+(o.dor_piora||'-')+'\n'+
     '\n*Saúde:* '+(o.an_comorb||'-')+'\n*Cirurgias:* '+(o.an_cirurg||'-')+'\n*Medicações:* '+(o.an_med||'-')+'\n*Atividade física:* '+(o.an_habitos||'-')+
-    '\n\n— — —\nCódigo (não apague): '+codigo(o);
+    '\n\n— — —\nCódigo (não apague): '+cod;
 }
 function validar(o){
   if(!document.getElementById('consent').checked){alert('Por favor, marque a autorização no final.');return false;}
   if(!o.id_nome){alert('Por favor, preencha pelo menos o seu nome.');return false;}
   return true;
 }
-function enviar(){
+async function enviar(){
   const o=coletar(); if(!validar(o)) return;
+  /* abre a aba já, de forma síncrona, antes do await — navegador (principalmente Safari/iOS)
+     bloqueia popup aberto depois de uma espera assíncrona por não ver como gesto direto do usuário */
+  const win = window.open('', '_blank');
   const num=FISIO_WHATS.replace(/\D/g,'');
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(resumo(o)),'_blank');
+  const url = 'https://wa.me/'+num+'?text='+encodeURIComponent(await resumo(o));
+  if (win) win.location.href = url; else window.open(url, '_blank');
 }
-function copiar(){
+async function copiar(){
   const o=coletar(); if(!o.id_nome){alert('Preencha pelo menos o seu nome.');return;}
-  const cod=codigo(o);
+  const cod=await codigo(o);
   navigator.clipboard.writeText(cod).then(()=>alert('Código copiado! Envie para o(a) seu(sua) fisioterapeuta.'))
     .catch(()=>{ prompt('Copie este código e envie ao(à) fisioterapeuta:', cod); });
 }

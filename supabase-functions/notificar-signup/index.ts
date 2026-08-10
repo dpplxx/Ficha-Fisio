@@ -2,8 +2,22 @@ const RESEND_KEY     = Deno.env.get('RESEND_API_KEY') ?? ''
 const OWNER_EMAIL    = Deno.env.get('OWNER_EMAIL') ?? ''
 const WEBHOOK_SECRET = Deno.env.get('SIGNUP_WEBHOOK_SECRET') ?? ''
 
+function timingSafeEqual(a: string, b: string): boolean {
+  const bufA = new TextEncoder().encode(a)
+  const bufB = new TextEncoder().encode(b)
+  let diff = bufA.length ^ bufB.length
+  const len = Math.max(bufA.length, bufB.length)
+  for (let i = 0; i < len; i++) diff |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0)
+  return diff === 0
+}
+
+function escapeHtml(s: string): string {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
+
 Deno.serve(async (req) => {
-  if (!WEBHOOK_SECRET || req.headers.get('x-webhook-secret') !== WEBHOOK_SECRET) {
+  const provided = req.headers.get('x-webhook-secret') ?? ''
+  if (!WEBHOOK_SECRET || !timingSafeEqual(provided, WEBHOOK_SECRET)) {
     return new Response('Unauthorized', { status: 401 })
   }
   try {
@@ -32,7 +46,7 @@ Deno.serve(async (req) => {
             <table style="width:100%;border-collapse:collapse">
               <tr>
                 <td style="padding:8px 0;color:#555;font-size:14px;width:90px"><strong>E-mail</strong></td>
-                <td style="padding:8px 0;font-size:14px">${email}</td>
+                <td style="padding:8px 0;font-size:14px">${escapeHtml(email)}</td>
               </tr>
               <tr>
                 <td style="padding:8px 0;color:#555;font-size:14px"><strong>Data/hora</strong></td>

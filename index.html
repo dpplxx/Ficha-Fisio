@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Sentry error monitoring -->
+  <!-- Sentry error monitoring — init próprio antes do loader, sem PII/replay (mesmo padrão do app) -->
+  <script>
+    window.sentryOnLoad = function () {
+      Sentry.init({
+        sendDefaultPii: false,
+        beforeSend: function (event) {
+          if (event.request) { delete event.request.data; delete event.request.cookies; delete event.request.headers; }
+          if (event.user) { delete event.user.email; delete event.user.ip_address; }
+          return event;
+        }
+      });
+    };
+  </script>
   <script src="https://js.sentry-cdn.com/017c7425be945b4e8ae2fb20539115d1.min.js" crossorigin="anonymous"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-4Z35DNJE6S"></script>

@@ -1,7 +1,31 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Sentry error monitoring -->
+<!-- Sentry error monitoring — configurado ANTES do loader pra nunca capturar dado clínico do paciente.
+     Este app promete que dado sensível não sai do navegador; sem isso, um erro em runtime poderia
+     vazar texto de campos clínicos (mensagem/stack/breadcrumb) pro Sentry. -->
+<script>
+  window.sentryOnLoad = function () {
+    Sentry.init({
+      sendDefaultPii: false,
+      // não inclui replayIntegration/httpClientIntegration — sem session replay, sem captura de corpo de request
+      beforeSend: function (event) {
+        if (event.request) { delete event.request.data; delete event.request.cookies; delete event.request.headers; }
+        if (event.breadcrumbs) {
+          event.breadcrumbs = event.breadcrumbs.filter(function (b) {
+            return b.category !== 'ui.input' && b.category !== 'xhr' && b.category !== 'fetch' && b.category !== 'console';
+          });
+        }
+        if (event.user) { delete event.user.email; delete event.user.ip_address; }
+        return event;
+      },
+      beforeBreadcrumb: function (crumb) {
+        if (crumb.category === 'ui.input' || crumb.category === 'ui.click') return null;
+        return crumb;
+      }
+    });
+  };
+</script>
 <script src="https://js.sentry-cdn.com/017c7425be945b4e8ae2fb20539115d1.min.js" crossorigin="anonymous"></script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4Z35DNJE6S"></script>
@@ -33,6 +57,9 @@ window.PAY_URL_ANUAL='https://www.asaas.com/c/8nc44vnab1xvhpbt'; /* link Asaas �
 window.PAY_PRECO='R$ 9,90/mês'; /* preço exibido na tela de assinatura */
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.0/dist/umd/supabase.js" integrity="sha384-3lSoufGjgosjqp3JDr/NReX3PjMd3SlC8wJ23CWFjB6DSFNf71I0DhcRTUm9MwgO" crossorigin="anonymous" onerror="document.write('\x3Cscript src=&quot;https://unpkg.com/@supabase/supabase-js@2.112.0/dist/umd/supabase.js&quot; integrity=&quot;sha384-3lSoufGjgosjqp3JDr/NReX3PjMd3SlC8wJ23CWFjB6DSFNf71I0DhcRTUm9MwgO&quot; crossorigin=&quot;anonymous&quot;>\x3C/script>')"></script>
+<script src="lib/preanamnese-crypto.js"></script>
+<script src="lib/sanitize.js"></script>
+<script src="lib/trial.js"></script>
 <style>
 :root{
   --azul:#0f4c81; --azul2:#1769aa; --claro:#eef4fa; --borda:#cdd9e5;
@@ -98,6 +125,10 @@ th{background:var(--claro);color:var(--azul);font-weight:600}
 #trialBanner{display:none;background:#b45309;color:#fff;text-align:center;padding:7px 14px;font-size:13px;font-weight:600;line-height:1.5}
 #trialBanner a{color:#fde68a;text-decoration:underline;cursor:pointer;margin-left:6px;font-weight:700}
 html.locked #trialBanner{display:none!important}
+/* Banner de lembrete de backup */
+#backupBanner{display:none;background:#11436f;color:#fff;text-align:center;padding:7px 14px;font-size:13px;font-weight:600;line-height:1.5}
+#backupBanner a{color:#9cc3e0;text-decoration:underline;cursor:pointer;margin-left:6px;font-weight:700}
+html.locked #backupBanner{display:none!important}
 /* Barra de pacientes */
 .patient-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#11436f;color:#fff;padding:8px 16px;font-size:13px}
 .patient-bar .pb-label{font-weight:600}
@@ -161,7 +192,11 @@ html.locked #trialBanner{display:none!important}
 .modal{background:#fff;border-radius:12px;max-width:480px;width:100%;max-height:90vh;overflow:auto;padding:18px}
 .modal h3{margin:0 0 12px;color:var(--azul);font-size:16px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
-/* Login / paywall */
+/* Login / paywall — só oculta a UI (visibility:hidden). Não é controle de acesso a dado: os dados do
+   paciente já estão carregados do localStorage do próprio navegador do usuário quando isso roda, então
+   não há PHI de terceiros em jogo. Isso é aceito como limitação de um app 100% local sem backend que
+   guarde os dados — dá pra contornar via devtools (ex.: remover a classe "locked"), o que afeta só a
+   cobrança/monetização, não a confidencialidade de dados de paciente. */
 html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked nav.tabs, html.locked header.app .toolbar{visibility:hidden}
 .auth-gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--azul),var(--azul2));display:flex;align-items:center;justify-content:center;z-index:500;padding:18px}
 .auth-card{background:#fff;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
@@ -260,6 +295,7 @@ html.locked main, html.locked .patient-bar, html.locked .mode-bar, html.locked n
 </div>
 
 <div id="trialBanner" class="no-print"></div>
+<div id="backupBanner" class="no-print"></div>
 
 <div class="mode-bar no-print">
   <button class="mode-btn active" data-mode="ficha" onclick="setView('ficha')">📋 Ficha do paciente</button>
@@ -1017,7 +1053,19 @@ function criarRegistro(nome, fichaDados){
   DB.pacientes.push(reg); return reg;
 }
 function pacienteAtual(){return DB.pacientes.find(p=>p.id===DB.atualId);}
-function persistDB(){localStorage.setItem(DB_KEY, JSON.stringify(DB));}
+let _avisoQuotaMostrado=false;
+function persistDB(){
+  try{
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  }catch(e){
+    // antes disso um estouro de cota (localStorage cheio, ou modo privado que bloqueia
+    // escrita) falhava direto sem avisar ninguém — a mudança parecia salva, mas não estava.
+    if(!_avisoQuotaMostrado){
+      _avisoQuotaMostrado=true;
+      alert('Não consegui salvar agora: o armazenamento deste navegador está cheio ou bloqueado (ex.: modo de navegação privada). Faça um "Backup geral" imediatamente e guarde o arquivo em outro lugar — enquanto isso não for resolvido, novas alterações podem não ser salvas.');
+    }
+  }
+}
 
 function carregarDB(){
   try{const s=JSON.parse(localStorage.getItem(DB_KEY)); if(s&&s.pacientes) DB=s;}catch(e){}
@@ -1316,14 +1364,14 @@ function renderSessoes(){
       <div class="evo-head"><strong>Sessão ${i+1}</strong>
         <button class="del no-print" onclick="delSessao(${i})">Remover</button></div>
       <div class="grid g4">
-        <label class="field">Data<input type="date" value="${s.data||''}" onchange="updSessao(${i},'data',this.value)"></label>
-        <label class="field">EVA (0–10)<input type="number" min="0" max="10" value="${s.eva||''}" onchange="updSessao(${i},'eva',this.value)"></label>
-        <label class="field">ADM / ganho<input value="${s.adm||''}" onchange="updSessao(${i},'adm',this.value)"></label>
-        <label class="field">Nº atendimento<input value="${s.num||''}" onchange="updSessao(${i},'num',this.value)"></label>
+        <label class="field">Data<input type="date" value="${escAttr(s.data)}" onchange="updSessao(${i},'data',this.value)"></label>
+        <label class="field">EVA (0–10)<input type="number" min="0" max="10" value="${escAttr(s.eva)}" onchange="updSessao(${i},'eva',this.value)"></label>
+        <label class="field">ADM / ganho<input value="${escAttr(s.adm)}" onchange="updSessao(${i},'adm',this.value)"></label>
+        <label class="field">Nº atendimento<input value="${escAttr(s.num)}" onchange="updSessao(${i},'num',this.value)"></label>
       </div>
       <div class="grid g2" style="margin-top:8px">
-        <label class="field">Conduta realizada<textarea onchange="updSessao(${i},'conduta',this.value)">${s.conduta||''}</textarea></label>
-        <label class="field">Evolução / resposta / intercorrências<textarea onchange="updSessao(${i},'evol',this.value)">${s.evol||''}</textarea></label>
+        <label class="field">Conduta realizada<textarea onchange="updSessao(${i},'conduta',this.value)">${escTxt(s.conduta)}</textarea></label>
+        <label class="field">Evolução / resposta / intercorrências<textarea onchange="updSessao(${i},'evol',this.value)">${escTxt(s.evol)}</textarea></label>
       </div>`;
     c.appendChild(div);
   });
@@ -1344,12 +1392,12 @@ function renderImagens(){
         <button class="del no-print" onclick="delImagem(${i})">Remover</button></div>
       <div class="grid g3">
         <label class="field">Tipo<select onchange="updImagem(${i},'tipo',this.value)">${TIPOS_EXAME.map(o=>`<option ${s.tipo===o?'selected':''}>${o}</option>`).join('')}</select></label>
-        <label class="field">Data<input type="date" value="${s.data||''}" onchange="updImagem(${i},'data',this.value)"></label>
-        <label class="field">Região / segmento<input value="${s.regiao||''}" onchange="updImagem(${i},'regiao',this.value)"></label>
+        <label class="field">Data<input type="date" value="${escAttr(s.data)}" onchange="updImagem(${i},'data',this.value)"></label>
+        <label class="field">Região / segmento<input value="${escAttr(s.regiao)}" onchange="updImagem(${i},'regiao',this.value)"></label>
       </div>
       <div class="grid g2" style="margin-top:8px">
-        <label class="field">Achados<textarea onchange="updImagem(${i},'achados',this.value)">${s.achados||''}</textarea></label>
-        <label class="field">Laudo / conclusão<textarea onchange="updImagem(${i},'laudo',this.value)">${s.laudo||''}</textarea></label>
+        <label class="field">Achados<textarea onchange="updImagem(${i},'achados',this.value)">${escTxt(s.achados)}</textarea></label>
+        <label class="field">Laudo / conclusão<textarea onchange="updImagem(${i},'laudo',this.value)">${escTxt(s.laudo)}</textarea></label>
       </div>`;
     c.appendChild(div);
   });
@@ -1364,8 +1412,6 @@ const CORST={Agendado:'#5b6b7b',Confirmado:'#1b7f4b',Atendido:'#1769aa',Faltou:'
 let agSelDate = hojeISO();
 let finMes = hojeISO().slice(0,7);
 
-function escAttr(s){return (s||'').replace(/"/g,'&quot;');}
-function escTxt(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtData(iso){if(!iso) return '—'; const p=(''+iso).split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso;}
 function moeda(v){return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function nomePacienteAtual(){const p=pacienteAtual(); return (p&&p.dados&&p.dados.campos&&p.dados.campos.id_nome)||'';}
@@ -1658,7 +1704,7 @@ function imprimir(resumo){
   document.getElementById('phClinic').textContent=c.nome||'';
   document.getElementById('phContato').textContent=c.contato||'';
   const dataAv=getK('id_data');
-  document.getElementById('phMeta').innerHTML=`<b>Paciente:</b> ${getK('id_nome')||'—'}<br><b>Data:</b> ${dataAv?dataAv.split('-').reverse().join('/'):''}`;
+  document.getElementById('phMeta').innerHTML=`<b>Paciente:</b> ${esc(getK('id_nome'))||'—'}<br><b>Data:</b> ${dataAv?dataAv.split('-').reverse().join('/'):''}`;
   document.getElementById('phAssinatura').textContent=c.assinatura||getK('id_fisio')||'';
   marcarVazios(!!resumo);
   window.print();
@@ -1679,16 +1725,56 @@ function exportarJSON(){ // ficha do paciente atual
 function exportarBackup(){ // todos os pacientes
   salvar(true);
   baixar(DB, `backup_fichas_${hojeISO()}.json`);
+  localStorage.setItem('ff_lastBackup', String(Date.now()));
+  esconderBannerBackup();
+}
+function esconderBannerBackup(dias){
+  const b=document.getElementById('backupBanner'); if(b) b.style.display='none';
+  localStorage.setItem('ff_snoozeBackup', String(Date.now()+(dias||7)*86400000));
+}
+function checarBannerBackup(){
+  if(!DB.pacientes||!DB.pacientes.length) return;
+  const snooze=Number(localStorage.getItem('ff_snoozeBackup')||0);
+  if(Date.now()<snooze) return;
+  const last=Number(localStorage.getItem('ff_lastBackup')||0);
+  const dias=last?Math.floor((Date.now()-last)/86400000):Infinity;
+  if(dias<30) return;
+  const b=document.getElementById('backupBanner'); if(!b) return;
+  const txt=last?`📦 Já se passaram ${dias} dias desde seu último backup geral.`:'📦 Você ainda não fez um backup geral dos seus pacientes.';
+  b.innerHTML=txt+' <a onclick="exportarBackup()">Fazer backup agora</a> <a onclick="esconderBannerBackup()">Lembrar em 7 dias</a>';
+  b.style.display='block';
+}
+/* Validação mínima de schema antes de aceitar um arquivo importado — sem isso um
+   JSON malformado (campo com tipo errado, paciente sem id, etc.) conseguia corromper
+   o DB inteiro silenciosamente, já que o resto do app assume que DB.pacientes é
+   sempre um array de objetos com id/nome/dados. */
+function validarBackupGeral(obj){
+  if(!obj||typeof obj!=='object'||!Array.isArray(obj.pacientes)) return 'Arquivo não parece um backup geral válido (esperava uma lista de pacientes).';
+  for(const p of obj.pacientes){
+    if(!p||typeof p!=='object'||Array.isArray(p)||(typeof p.id!=='string'&&typeof p.id!=='number')) return 'Um dos registros de paciente no arquivo está corrompido ou sem identificador.';
+    if(p.dados!=null&&(typeof p.dados!=='object'||Array.isArray(p.dados))) return 'Um dos registros de paciente tem dados de ficha em formato inválido.';
+  }
+  if(obj.agenda!=null&&!Array.isArray(obj.agenda)) return 'O campo "agenda" do arquivo não é uma lista válida.';
+  if(obj.financeiro!=null&&!Array.isArray(obj.financeiro)) return 'O campo "financeiro" do arquivo não é uma lista válida.';
+  return null;
+}
+function validarFichaUnica(obj){
+  if(!obj||typeof obj!=='object'||typeof obj.campos!=='object'||obj.campos===null||Array.isArray(obj.campos)) return 'Arquivo não parece uma ficha de paciente válida.';
+  return null;
 }
 function importarJSON(e){
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=()=>{try{
     const obj=JSON.parse(r.result);
-    if(obj.pacientes){ // backup geral
+    if(obj&&obj.pacientes){ // backup geral
+      const erro=validarBackupGeral(obj);
+      if(erro){ alert(erro); e.target.value=''; return; }
       if(!confirm('Importar BACKUP GERAL? Isso substituirá TODOS os pacientes atuais deste navegador.')){e.target.value='';return;}
       DB=obj; if(!DB.atualId||!DB.pacientes.find(p=>p.id===DB.atualId)) DB.atualId=(DB.pacientes[0]||{}).id;
-    } else if(obj.campos){ // ficha única -> novo paciente
+    } else if(obj&&obj.campos){ // ficha única -> novo paciente
+      const erro=validarFichaUnica(obj);
+      if(erro){ alert(erro); e.target.value=''; return; }
       const p=criarRegistro(obj.campos.id_nome||'Paciente importado', obj); DB.atualId=p.id;
       flash('Ficha importada como novo paciente');
     } else { alert('Arquivo não reconhecido.'); e.target.value=''; return; }
@@ -1740,7 +1826,8 @@ function enviarPreAnamnese(){
     meuTel=n.replace(/\D/g,'');
     localStorage.setItem('fisio_whats',meuTel);
   }
-  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+meuTel;
+  const chave = window.PreAnamneseCrypto ? window.PreAnamneseCrypto.getOrCreateKeyB64() : '';
+  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+meuTel+(chave?'#k='+chave:'');
   const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
   abrirModal(`<h3>📤 Pré-anamnese — enviar ao paciente</h3>
     <div class="legend">Copie a mensagem abaixo e cole no WhatsApp do paciente:</div>
@@ -1761,12 +1848,23 @@ function importarPreAnamnese(){
     <textarea id="imp_txt" style="width:100%;min-height:120px"></textarea>
     <div class="modal-actions"><button onclick="fecharModal()">Cancelar</button><button style="background:var(--azul);color:#fff" onclick="fazerImportPre()">Importar</button></div>`);
 }
-function fazerImportPre(){
+async function fazerImportPre(){
   const txt=getId('imp_txt')||'';
-  const m=txt.match(/FICHA::([A-Za-z0-9+/=]+)/);
+  const m=txt.match(/FICHA::((?:v2:)?[A-Za-z0-9+/=_-]+)/);
   if(!m){ alert('Não encontrei um código válido. Copie a mensagem que o paciente enviou (incluindo o trecho "Código: FICHA::...").'); return; }
   let obj;
-  try{ obj=JSON.parse(decodeURIComponent(escape(atob(m[1])))); }catch(e){ alert('Código inválido ou incompleto.'); return; }
+  try{
+    if(m[1].indexOf('v2:')===0){
+      const chave=localStorage.getItem('fisio_preanamnese_key');
+      if(!chave||!window.PreAnamneseCrypto) throw new Error('sem chave de decriptação neste navegador');
+      obj=await window.PreAnamneseCrypto.decryptCode('FICHA::'+m[1],chave);
+    } else {
+      obj=JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    }
+  }catch(e){
+    alert('Não consegui ler esse código neste navegador. Se você trocou de aparelho, limpou os dados do navegador, ou o link usado é de outro fisioterapeuta, peça pro paciente preencher de novo com um link gerado agora.');
+    return;
+  }
   salvar(true);
   const nome=obj.id_nome||'Paciente importado';
   const p=criarRegistro(nome);
@@ -1796,6 +1894,7 @@ restaurarCampos();
 bindCampos();
 atualizarSeletorPacientes();
 carregarClinica();
+checarBannerBackup();
 window.addEventListener('afterprint',()=>marcarVazios(false));
 
 // Idade automática a partir da data de nascimento
@@ -1836,7 +1935,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
 <div id="configModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center;padding:18px">
   <div style="background:#fff;border-radius:14px;padding:26px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">
     <h3 style="color:var(--azul);margin:0 0 18px;font-size:17px">⚙️ Configurações</h3>
-    <label style="font-size:12px;font-weight:600;color:var(--cinza);display:block;margin-bottom:4px">Nova senha <span style="font-weight:400">(mínimo 6 caracteres)</span></label>
+    <label style="font-size:12px;font-weight:600;color:var(--cinza);display:block;margin-bottom:4px">Nova senha <span style="font-weight:400">(mínimo 8 caracteres)</span></label>
     <input type="password" id="novaSenha" autocomplete="new-password" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:7px;font-size:14px;margin-bottom:10px">
     <label style="font-size:12px;font-weight:600;color:var(--cinza);display:block;margin-bottom:4px">Confirmar nova senha</label>
     <input type="password" id="confirmaSenha" autocomplete="new-password" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:7px;font-size:14px;margin-bottom:14px">
@@ -1918,7 +2017,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     $('authBtn').textContent='Salvar senha';
     $('authBtn').onclick=async function(){
       const pass=$('authPass').value;
-      if(!pass||pass.length<6){msg('A senha precisa ter pelo menos 6 caracteres.');return;}
+      if(!pass||pass.length<8){msg('A senha precisa ter pelo menos 8 caracteres.');return;}
       const btn=$('authBtn'); btn.disabled=true; btn.textContent='Salvando...';
       try{
         const {error}=await sb.auth.updateUser({password:pass});
@@ -1938,8 +2037,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     try{
       const v=localStorage.getItem(trialKey(uid));
       if(!v) return null;
-      const ms=TRIAL_DIAS*86400000-(Date.now()-parseInt(v));
-      return Math.max(0,Math.ceil(ms/86400000));
+      return window.TrialMath.diasRestantesTrial(parseInt(v),Date.now(),TRIAL_DIAS);
     }catch(e){return null;}
   }
   function iniciarTrial(uid){
@@ -2062,7 +2160,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   window.salvarNovaSenha=async function(){
     const nova=$('novaSenha').value, confirma=$('confirmaSenha').value;
     const msgEl=$('configMsg'), btn=$('btnSalvarSenha');
-    if(!nova||nova.length<6){msgEl.textContent='A senha precisa ter pelo menos 6 caracteres.';msgEl.style.color='var(--vermelho)';return;}
+    if(!nova||nova.length<8){msgEl.textContent='A senha precisa ter pelo menos 8 caracteres.';msgEl.style.color='var(--vermelho)';return;}
     if(nova!==confirma){msgEl.textContent='As senhas não coincidem.';msgEl.style.color='var(--vermelho)';return;}
     btn.disabled=true; btn.textContent='Salvando...';
     try{
