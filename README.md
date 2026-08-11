@@ -7,7 +7,7 @@ Site: https://fichafisio.com.br
 ## O que é cada parte
 
 ```
-index.html                    landing page (marketing, planos, pagamento PIX/Asaas)
+index.html                    landing page (marketing, planos, pagamento via Asaas)
 app/index.html                o app em si — ficha de avaliação, prontuário, agenda, financeiro
 app/pre-anamnese.html         formulário que o paciente preenche antes da consulta e envia por WhatsApp
 app/sw.js                     service worker (PWA, funciona offline)
@@ -25,9 +25,13 @@ Não tem build step. É HTML/CSS/JS puro, cada arquivo é servido como está —
 
 - **App (`app/index.html`)**: single-page app. Os dados da ficha (pacientes, avaliações, prontuário) ficam salvos **só no navegador** (localStorage), nunca em servidor — é assim que o dado sensível do paciente (LGPD) fica protegido. Por isso é importante orientar o fisioterapeuta a fazer backup/exportação com regularidade — o botão "📁 Backup automático" na barra de pacientes usa a File System Access API (Chrome/Edge; não existe no Safari/iPhone) pra gravar um backup atualizado automaticamente numa pasta escolhida por ele, sem depender de lembrar de exportar manualmente.
 - **Pré-anamnese (`app/pre-anamnese.html`)**: link que o fisioterapeuta manda pro paciente responder antes da consulta. O paciente preenche, aceita o termo de uso de dados (LGPD) e os dados vão direto pro WhatsApp do fisioterapeuta — não passam por nenhum servidor do Ficha Fisio. O payload (`FICHA::v2:...`) vai cifrado com AES-GCM (`app/lib/preanamnese-crypto.js`); a chave fica só no localStorage do aparelho do fisioterapeuta, embutida no link como fragmento de URL (`#k=...`), que também não é enviado a servidor nenhum.
-- **Assinatura**: pagamento processado pela Asaas (PIX/cartão). O backend (Supabase) guarda só o essencial pra liberar acesso: e-mail, status (ativo/inativo) e validade da assinatura, na tabela `assinantes` (protegida por Row Level Security).
-- **Webhook da Asaas**: recebe eventos de pagamento (aprovado, recusado, assinatura cancelada) e ativa/desativa o acesso do usuário automaticamente, calculando a validade a partir do ciclo do plano (mensal, anual etc.). Essa function não está neste repositório — foi criada e é editada direto pelo painel do Supabase.
+- **Assinatura**: pagamento processado pela Asaas (PIX/cartão), via links de checkout hospedados fixos (preço não é definido pelo cliente). O backend (Supabase) guarda só o essencial pra liberar acesso: e-mail, status (ativo/inativo) e validade da assinatura, na tabela `assinantes` (protegida por Row Level Security — só a service role, usada pelas functions abaixo, grava nela; o cliente só lê a própria linha).
+- **`supabase-functions/asaas-webhook`**: recebe eventos da Asaas (`PAYMENT_RECEIVED`/`PAYMENT_CONFIRMED` ativam; `PAYMENT_REFUNDED`/`PAYMENT_CHARGEBACK`/`SUBSCRIPTION_DELETED`/`PAYMENT_OVERDUE` desativam) e ativa/desativa o acesso, calculando a validade a partir do ciclo da assinatura consultado direto na API da Asaas (não confia no payload pra isso). Se o e-mail do pagamento ainda não tem conta, cria uma (senha aleatória) e manda um e-mail de boas-vindas com link de definição de senha (Resend). Protegida por um token estático comparado no header `asaas-access-token` (configurado nas secrets da function como `ASAAS_WEBHOOK_TOKEN`, e no lado da Asaas ao cadastrar o webhook).
+- **`supabase-functions/cancelar-assinatura`**: chamada pelo app ([app/index.html](app/index.html) → `cancelarAssinatura()`) com o JWT do próprio usuário logado — a function verifica o token direto no GoTrue (`/auth/v1/user`), pega o e-mail do token verificado (nunca de um campo do corpo da requisição) e cancela as assinaturas desse e-mail na Asaas.
 - **`supabase-functions/notificar-signup`**: function separada, sem relação com pagamento. Dispara um e-mail pra você (via Resend) sempre que uma conta nova é criada, só como aviso. Protegida por um segredo compartilhado (`SIGNUP_WEBHOOK_SECRET`) enviado no header `x-webhook-secret` — configure o mesmo valor no disparador (trigger/webhook) e nas secrets da function no painel do Supabase.
+- **Integrações de pagamento antigas, retiradas**: o projeto já usou Hotmart e Mercado Pago antes da Asaas. `mercadopago-webhook` e `hotmart-webhook` existem só como placeholder (`410 Service migrated to Asaas`, não processam nada). A function `criar-preferencia` (Mercado Pago) e o modal "Pagar com PIX" que a chamava foram removidos em 2026-08 — ver CHANGELOG.
+
+**Pipeline de pagamento:** `Asaas checkout (link fixo)` → `asaas-webhook` (valida token → consulta cliente/assinatura na Asaas → grava em `assinantes` via service role) → `licenca` (lê `assinantes`/`trial_starts`, decide se libera) → app desbloqueado.
 
 ## Como editar e publicar
 

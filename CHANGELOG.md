@@ -2,6 +2,53 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-11 (parte 9) — functions de pagamento versionadas no Git (P1)
+
+`asaas-webhook` e `cancelar-assinatura` só existiam no painel do Supabase, sem
+histórico nenhum no Git — igual o `licenca`/`notificar-signup` já tinham sido
+antes de entrar no repositório. Copiado o código exatamente como está
+publicado hoje (colado pelo dono do projeto, direto do editor do Supabase) pra
+`supabase-functions/asaas-webhook/index.ts` e
+`supabase-functions/cancelar-assinatura/index.ts` — nenhuma lógica foi
+alterada. Corrigidos só alguns caracteres corrompidos por encoding no meio do
+copia-e-cola (ex. "nÃ£o" → "não", "botÃ£o" → "botão") em comentários e textos
+do e-mail, não em lógica. README atualizado com o pipeline completo de
+pagamento e o que cada function faz.
+
+Achados de auditoria (não corrigidos agora, só documentados — decisão de não
+mexer no webhook Asaas nesta etapa):
+- A comparação do token do webhook (`asaas-access-token`) usa `!==` direto,
+  não é em tempo constante — diferente do `notificar-signup`, que já foi
+  corrigido pra isso.
+- Não há proteção contra replay/idempotência: reenviar a mesma notificação da
+  Asaas (retry de rede, ou alguém que capturou uma chamada válida uma vez)
+  reprocessa e recalcula a validade a partir de `new Date()` no momento do
+  reprocessamento, podendo estender a assinatura além do que foi pago.
+- A ativação não confere se o valor pago bate com o preço do plano — só olha
+  o tipo de evento e o ciclo da assinatura. Hoje isso não é explorável porque
+  os links de checkout têm preço fixo (não editável pelo cliente), mas é uma
+  camada de defesa a menos se isso mudar no futuro.
+- `cancelar-assinatura` usa `Access-Control-Allow-Origin: '*'` (mais aberto
+  que o necessário — poderia restringir a `fichafisio.com.br`).
+
+## 2026-08-10 (parte 8) — remoção da superfície legada do Mercado Pago (P0)
+
+A landing page ainda tinha um modal "Pagar com PIX" (não usado por nenhum
+botão visível) chamando a Edge Function `criar-preferencia`, remanescente da
+integração antiga com Mercado Pago (a migração pra Asaas já tinha trocado os
+botões reais, mas esse código morto nunca foi removido). A function estava
+pública, sem autenticação, e gerava uma preferência de pagamento REAL no
+Mercado Pago (confirmado: R$9,90, preço correto, não manipulável pelo
+cliente). Como o webhook antigo do Mercado Pago já responde `410 Service
+migrated to Asaas`, um pagamento feito por esse caminho nunca liberaria
+acesso — risco real de alguém pagar e não receber nada.
+
+Removido: modal PIX (HTML/CSS/JS) e a function `criar-preferencia` (apagada
+no painel do Supabase — confirmado ao vivo, agora responde `404 NOT_FOUND`).
+Sondagem por outras functions de pagamento antigas ainda ativas não achou
+mais nada — `hotmart-webhook` também existe mas já estava corretamente
+desativado (mesmo padrão `410`).
+
 ## 2026-08-10 (parte 7) — isolamento do banco local por conta (P1)
 
 O banco de pacientes/agenda/financeiro no navegador (`fichaFisioDB_v1`) continuava
