@@ -1050,6 +1050,19 @@ let dados = novaFicha();
 // aguardando a chave da Edge Function `licenca` pra ser lido (ver desbloquearDBComChave).
 let _dbCifradoBruto=null;
 let _dbUnlockKey=null;
+// Chave de armazenamento efetiva (localStorage) do banco em uso. Começa apontando pro
+// slot global/legado (single-user, login desligado) e só passa a apontar pro slot
+// isolado da conta (DB_KEY+'_'+uid) depois que carregarDBDoUsuario resolve o uid — ver
+// CHANGELOG "isolamento do banco local por conta".
+let _dbStoreKey=DB_KEY;
+// uid da conta cujo DB está carregado em memória agora, ou null se ainda não resolvido
+// (bootstrap sem login, ou login desligado). Evita recarregar/zerar o DB em memória à
+// toa num refresh de token da MESMA conta (o que apagaria uma edição em andamento).
+let _dbUsuarioAtual=null;
+// true quando o DB atualmente em _dbCifradoBruto/DB veio do slot GLOBAL legado (pré-
+// isolamento) e ainda não foi comprovado como pertencente a esta conta — só é
+// consumido/apagado do slot legado depois que a migração termina com sucesso.
+let _dbMigracaoLegadoPendente=false;
 
 function novaFicha(){return {regioesAtivas:[], escalasAtivas:[], escalaVals:{}, sessoes:[], mapaDor:[], imagens:[], campos:{}};}
 function hojeISO(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
@@ -1067,7 +1080,8 @@ async function persistDB(){
     // com chave em memória (assinatura/trial verificados no servidor), grava cifrado;
     // sem chave (app sem login ativo, ou ainda não migrado), grava como sempre foi
     const paraSalvar = (_dbUnlockKey && window.DbCrypto) ? await DbCrypto.encryptString(texto,_dbUnlockKey) : texto;
-    localStorage.setItem(DB_KEY, paraSalvar);
+    localStorage.setItem(_dbStoreKey, paraSalvar);
+    return true;
   }catch(e){
     // antes disso um estouro de cota (localStorage cheio, ou modo privado que bloqueia
     // escrita) falhava direto sem avisar ninguém — a mudança parecia salva, mas não estava.
@@ -1075,6 +1089,7 @@ async function persistDB(){
       _avisoQuotaMostrado=true;
       alert('Não consegui salvar agora: o armazenamento deste navegador está cheio ou bloqueado (ex.: modo de navegação privada). Faça um "Backup geral" imediatamente e guarde o arquivo em outro lugar — enquanto isso não for resolvido, novas alterações podem não ser salvas.');
     }
+    return false;
   }
 }
 
@@ -1088,7 +1103,22 @@ async function desbloquearDBComChave(chave,chaveAntiga){
   _dbUnlockKey=chave;
   if(_dbCifradoBruto){
     const r=await DbCrypto.abrirComMigracao(_dbCifradoBruto,chave,chaveAntiga);
-    if(!r.ok) return false; // nenhuma chave abriu o que estava salvo — não sobrescreve nada
+    if(!r.ok){
+      if(_dbMigracaoLegadoPendente){
+        // o blob legado (slot global, pré-isolamento) não abriu com a chave desta
+        // conta — não é dela. Não bloqueia o login por causa de dado de OUTRA conta:
+        // começa com um DB vazio pra esta conta e deixa o slot legado intocado (quem
+        // conseguir abri-lo de verdade um dia faz a migração dele, ver carregarDBDoUsuario).
+        _dbCifradoBruto=null; _dbMigracaoLegadoPendente=false;
+        DB={pacientes:[],atualId:null};
+        const p=criarRegistro('Novo paciente'); DB.atualId=p.id;
+        DB.agenda=[]; DB.financeiro=[];
+        dados=Object.assign(novaFicha(), pacienteAtual().dados);
+        await persistDB();
+        return true;
+      }
+      return false; // nenhuma chave abriu o que estava salvo — não sobrescreve nada
+    }
     try{
       const s=JSON.parse(r.texto);
       if(!s||!s.pacientes) throw new Error('formato inesperado após decifrar');
@@ -1097,7 +1127,13 @@ async function desbloquearDBComChave(chave,chaveAntiga){
       if(!DB.atualId||!pacienteAtual()) DB.atualId=DB.pacientes[0].id;
       DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
       dados=Object.assign(novaFicha(), pacienteAtual().dados);
-      if(r.migrou) await persistDB(); // veio da chave antiga — recifra já com a atual
+      if(r.migrou||_dbMigracaoLegadoPendente){
+        // veio da chave antiga (rotação mensal descontinuada) e/ou do slot legado
+        // global — recifra já com a chave atual, no slot isolado desta conta.
+        const ok=await persistDB();
+        if(ok&&_dbMigracaoLegadoPendente) localStorage.removeItem(DB_KEY); // só apaga o legado depois de confirmado gravado no slot da conta
+      }
+      _dbMigracaoLegadoPendente=false;
       return true;
     }catch(e){
       return false; // texto decifrado não é um DB válido — não sobrescreve nada
@@ -1109,12 +1145,14 @@ async function desbloquearDBComChave(chave,chaveAntiga){
     try{ baixar(DB, `seguranca_migracao_${hojeISO()}.json`); }catch(e){}
     localStorage.setItem('ff_migrado_v2','1');
   }
-  await persistDB();
+  const ok=await persistDB();
+  if(ok&&_dbMigracaoLegadoPendente) localStorage.removeItem(DB_KEY); // só apaga o legado depois de confirmado gravado no slot da conta
+  _dbMigracaoLegadoPendente=false;
   return true;
 }
 
 function carregarDB(){
-  const bruto=localStorage.getItem(DB_KEY);
+  const bruto=localStorage.getItem(_dbStoreKey);
   if(window.DbCrypto && DbCrypto.ehCifrado(bruto)){
     // dado real existe cifrado — não inventa paciente novo nem mexe em nada até
     // ter a chave (ver desbloquearDBComChave, chamado pelo fluxo de login/assinatura)
@@ -1132,6 +1170,57 @@ function carregarDB(){
   dados=Object.assign(novaFicha(), pacienteAtual().dados);
   DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
   persistDB();
+}
+
+/* Resolve o slot de armazenamento (localStorage) isolado da conta uidConta, chamada
+   sempre que o fluxo de login confirma um uid (ver tentarDesbloquear). Se a conta já
+   tem seu próprio slot (DB_KEY+'_'+uidConta), só troca pra ele. Senão, verifica o slot
+   GLOBAL legado (DB_KEY, formato anterior ao isolamento por conta): se existir, vira
+   candidato a migração — só é de fato adotado (e só então apagado do slot legado)
+   depois de comprovado que pertence a esta conta (decifra com a chave dela, ou, se
+   ainda em texto puro, aceito pra a primeira conta que logar após a atualização — ver
+   desbloquearDBComChave pra onde a migração cifrada termina). Se nada validar, a conta
+   começa com um DB vazio, e o slot legado (se não for desta conta) fica intocado. */
+function carregarDBDoUsuario(uidConta){
+  if(_dbUsuarioAtual===uidConta) return; // já é a conta carregada (ex.: refresh de token) — não perde edição em andamento
+  _dbUsuarioAtual=uidConta;
+  _dbUnlockKey=null; _dbCifradoBruto=null; _dbMigracaoLegadoPendente=false;
+  DB={pacientes:[],atualId:null};
+  const chaveUsuario=DB_KEY+'_'+uidConta;
+  if(localStorage.getItem(chaveUsuario)!=null){ _dbStoreKey=chaveUsuario; carregarDB(); return; }
+  const legado=localStorage.getItem(DB_KEY);
+  _dbStoreKey=chaveUsuario;
+  if(legado==null){ carregarDB(); return; }
+  if(window.DbCrypto && DbCrypto.ehCifrado(legado)){
+    // candidato cifrado — só é aceito de verdade se a chave desta conta abrir ele
+    // (ver desbloquearDBComChave); se não abrir, esta conta simplesmente começa vazia.
+    _dbCifradoBruto=legado; _dbMigracaoLegadoPendente=true; dados=novaFicha();
+    return;
+  }
+  try{
+    const s=JSON.parse(legado);
+    if(s&&s.pacientes){
+      DB=s;
+      DB.agenda=DB.agenda||[]; DB.financeiro=DB.financeiro||[];
+      if(!DB.atualId||!DB.pacientes.find(p=>p.id===DB.atualId)) DB.atualId=(DB.pacientes[0]&&DB.pacientes[0].id)||null;
+      if(!DB.pacientes.length){const p=criarRegistro('Novo paciente'); DB.atualId=p.id;}
+      dados=Object.assign(novaFicha(), pacienteAtual().dados);
+      // texto puro validado (JSON + formato de DB reconhecido) — a gravação no slot
+      // isolado e a remoção do slot legado acontecem em desbloquearDBComChave, só
+      // depois que o persistDB() de lá confirma sucesso.
+      _dbMigracaoLegadoPendente=true;
+      return;
+    }
+  }catch(e){ /* legado corrompido/ilegível — preserva original, não migra */ }
+  carregarDB(); // legado inválido pra migrar: começa vazio pra esta conta, sem tocar no slot legado
+}
+
+/* Limpa o DB em memória (chamado no logout) — evita que dado decifrado de uma conta
+   fique acessível em memória/DOM depois que a conta saiu, até o próximo login. */
+function limparDBEmMemoria(){
+  _dbUsuarioAtual=null; _dbUnlockKey=null; _dbCifradoBruto=null; _dbMigracaoLegadoPendente=false;
+  DB={pacientes:[],atualId:null};
+  dados=novaFicha();
 }
 
 function coletarCampos(){
@@ -2142,8 +2231,12 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   function chaveLicencaEmCache(uid){ try{ return localStorage.getItem('fisio_chaveDB_'+uid)||null; }catch(e){ return null; } }
   function salvarChaveLicenca(uid,chave){ try{ localStorage.setItem('fisio_chaveDB_'+uid,chave); }catch(e){} }
   async function tentarDesbloquear(session){
-    if(!window.DbCrypto) return {ok:true};
     const uid=session.user.id;
+    // Resolve/isola o banco local desta conta ANTES de qualquer coisa — precisa
+    // rodar mesmo se DbCrypto não estiver disponível, senão a isolação por conta
+    // ficaria dependente de criptografia (ver CHANGELOG "isolamento do banco local").
+    carregarDBDoUsuario(uid);
+    if(!window.DbCrypto){ aplicarFichaNaUI(); atualizarSeletorPacientes(); carregarClinica(); return {ok:true}; }
     let chave=null, chaveAntiga=null, negadoExplicito=false;
     try{
       const res=await comTimeout(fetch(window.SUPA_URL+'/functions/v1/licenca',{
@@ -2325,6 +2418,7 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
   window.authSair=async function(){
     try{ const {data}=await sb.auth.getSession(); if(data?.session?.user?.id) localStorage.removeItem('fisio_assin_'+data.session.user.id); }catch(e){}
     telas('login');
+    if(window.limparDBEmMemoria) limparDBEmMemoria();
     sb.auth.signOut().catch(()=>{});
   };
   window.recheckAssinatura=async function(){

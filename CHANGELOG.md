@@ -2,6 +2,36 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-10 (parte 7) — isolamento do banco local por conta (P1)
+
+O banco de pacientes/agenda/financeiro no navegador (`fichaFisioDB_v1`) continuava
+num único slot GLOBAL de `localStorage`, mesmo depois da chave de criptografia já
+estar isolada por uid (parte 6). Resultado: duas contas diferentes no mesmo
+navegador liam/escreviam o mesmo slot — trocar de conta podia misturar dados de
+pacientes de fisioterapeutas diferentes.
+
+Corrigido: cada conta agora usa seu próprio slot (`fichaFisioDB_v1_<uid>`). O DB em
+memória é zerado e recarregado sempre que o uid logado muda (`carregarDBDoUsuario`),
+sem depender de recarregar a página — evita herdar dado da conta anterior num
+logout/login ou troca de conta na mesma aba. Um refresh de token da MESMA conta não
+recarrega/zera nada (evita perder edição em andamento).
+
+Migração do slot antigo (global): só é adotada por uma conta depois de comprovado
+que os dados pertencem a ela — se estava cifrado, só conta como prova a chave desta
+conta conseguir decifrar (AES-GCM, autenticado); se estava em texto puro, é aceito
+pela primeira conta que logar após esta atualização (não dá pra provar
+criptograficamente a posse de um dado que nunca foi cifrado). Em qualquer caso, o
+slot antigo só é apagado depois que a gravação no slot novo é confirmada — se
+qualquer etapa falhar (decrifra errado, JSON inválido, escrita falha), o slot antigo
+fica intocado e a conta simplesmente começa com um banco vazio.
+
+Limitação conhecida, não resolvida por isolamento de armazenamento por si só: quem
+tem acesso ao DevTools do mesmo navegador/perfil sempre consegue *ler* os bytes
+brutos de `localStorage` de qualquer slot, inclusive de outra conta — isso não é
+evitável só com namespacing de chave. A proteção real contra isso é a criptografia
+(parte 5/V1): sem a chave da Edge Function `licenca` daquela conta especificamente,
+o conteúdo lido é inutilizável.
+
 ## 2026-08-10 (parte 6) — bug achado testando o próprio fix ao vivo
 
 Ao reverificar o V3 direto no site publicado (não só lendo o código), o cache de
