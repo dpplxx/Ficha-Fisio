@@ -2,6 +2,28 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-11 (parte 11) — regressão em produção: cache do Service Worker preso numa versão antiga da lib
+
+Usuários reportaram `TypeError: DbCrypto.abrirComMigracao is not a function` ao entrar no app,
+travando em `desbloquearDBComChave`. `abrirComMigracao` sempre existiu em `app/lib/db-crypto.js`
+e estava correta em produção (confirmado direto no servidor via `curl`) — não foi renomeada,
+removida nem havia incompatibilidade real entre `index.html` e `db-crypto.js` no deploy.
+
+Causa raiz: `app/sw.js` serve `index.html` network-first (sempre atualizado), mas serve o resto
+(`lib/*.js`, ícone, manifest) cache-first, sem revalidar. A constante `CACHE` nunca tinha sido
+incrementada desde que o Service Worker foi criado — como o próprio `sw.js` não mudava de
+conteúdo, o navegador nunca detectava atualização dele, então `install`/`activate` (que limpam
+o cache antigo) nunca rodavam de novo. Qualquer navegador que já tinha `lib/db-crypto.js`
+cacheado de antes da função `abrirComMigracao` existir ficava preso nessa cópia antiga pra
+sempre, mesmo com o servidor 100% atualizado — o HTML novo (com a chamada à função) rodava
+contra uma lib velha (sem ela) presa no cache do próprio navegador do cliente.
+
+Correção: `app/sw.js` — apenas incrementa `CACHE` de `ficha-fisio-v36` pra `ficha-fisio-v37`,
+forçando o navegador a detectar a atualização do Service Worker, limpar o cache antigo e buscar
+`lib/db-crypto.js` fresco do servidor. Nenhuma linha de `db-crypto.js` ou `index.html` foi
+alterada — a lógica de migração/isolamento do P1 (banco por UID, migração do slot legado,
+`chaveAntiga`, isolamento entre contas) está intacta.
+
 ## 2026-08-11 (parte 10) — higiene de logs no `asaas-webhook`
 
 Auditoria de privacidade do fluxo de pagamento (checkout → Asaas → webhook)
