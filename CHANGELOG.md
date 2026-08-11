@@ -2,6 +2,32 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-08-11 (parte 10) — higiene de logs no `asaas-webhook`
+
+Auditoria de privacidade do fluxo de pagamento (checkout → Asaas → webhook)
+concluiu que nenhum dado clínico transita nesse caminho, mas achou um ponto
+fora do mínimo necessário: e-mail do cliente aparecia em texto puro em 3
+linhas de `console.log`/`console.error` da `asaas-webhook`, e o token
+recebido era logado inteiro em caso de webhook inválido. Corrigido, só logs,
+sem mudança de lógica de autenticação/pagamento/assinatura/licença/RLS:
+
+- `console.log('Email boas-vindas enviado para:', email)` → sem o e-mail.
+- `console.error('Resend erro:', res.status, body)` → sem o `body` (podia
+  ecoar o e-mail de volta na mensagem de erro da Resend).
+- `console.log('createUser:', res.status, JSON.stringify(body))` → sem o
+  `body` (resposta do Admin API do Supabase, trazia e-mail e UID).
+- Mensagem de erro `'Erro ao criar usuário: ' + JSON.stringify(body)` → texto
+  genérico com só o status HTTP (esse texto ia pro corpo da resposta HTTP de
+  erro da function, não só pro log).
+- `console.error('webhook token inválido:', receivedToken)` → sem o token
+  recebido, só o texto genérico.
+- `console.log('processando:', JSON.stringify({event, email, ativo,
+  validade}))` → sem o `email`.
+
+Revisado o resto da function (`asaas webhook:` com paymentId/subId, `ciclo:`
+com o ciclo de cobrança): nenhum log restante contém e-mail, CPF, telefone,
+nome, token, segredo, payload completo ou dado clínico.
+
 ## 2026-08-11 (parte 9) — functions de pagamento versionadas no Git (P1)
 
 `asaas-webhook` e `cancelar-assinatura` só existiam no painel do Supabase, sem

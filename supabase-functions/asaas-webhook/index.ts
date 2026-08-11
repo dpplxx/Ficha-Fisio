@@ -44,10 +44,9 @@ async function enviarEmailBoasVindas(email: string, setupLink: string) {
     }),
   })
   if (!res.ok) {
-    const body = await res.text()
-    console.error('Resend erro:', res.status, body)
+    console.error('Resend erro:', res.status)
   } else {
-    console.log('Email boas-vindas enviado para:', email)
+    console.log('Email boas-vindas enviado')
   }
 }
 
@@ -69,8 +68,8 @@ async function ativarOuDesativar(email: string, ativo: boolean, subId?: string, 
       body: JSON.stringify({ email, email_confirm: true, password: crypto.randomUUID() }),
     })
     const body = await res.json()
-    console.log('createUser:', res.status, JSON.stringify(body))
-    if (!res.ok) throw new Error('Erro ao criar usuário: ' + JSON.stringify(body))
+    console.log('createUser:', res.status)
+    if (!res.ok) throw new Error('Erro ao criar usuário (status ' + res.status + ')')
     user = body
   }
 
@@ -125,7 +124,7 @@ Deno.serve(async (req) => {
   const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN')
   const receivedToken = req.headers.get('asaas-access-token')
   if (!expectedToken || receivedToken !== expectedToken) {
-    console.error('webhook token inválido:', receivedToken)
+    console.error('webhook token inválido')
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -163,7 +162,7 @@ Deno.serve(async (req) => {
     console.log('ciclo:', sub?.cycle, '→ validade:', validade)
   }
 
-  console.log('processando:', JSON.stringify({ event, email, ativo, validade }))
+  console.log('processando:', JSON.stringify({ event, ativo, validade }))
 
   try {
     const result = await ativarOuDesativar(email, ativo, subId, validade)
