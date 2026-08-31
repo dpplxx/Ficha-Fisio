@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha Fisio — Teste grátis</title>
+  <meta name="description" content="Ficha de avaliação completa, +30 escalas validadas, agenda e financeiro num só app. 5 dias grátis, sem cartão.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4Z35DNJE6S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-4Z35DNJE6S');
+    gtag('event', 'view_promo_page', { page_path: '/promo.html' });
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #1a4f8e;
+      --blue-mid:   #2563b0;
+      --blue-light: #3b82f6;
+      --blue-pale:  #eff6ff;
+      --text:       #0f172a;
+      --muted:      #475569;
+      --border:     #e2e8f0;
+      --green:      #16a34a;
+      --radius:     16px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0f2d5a 0%, #1a4f8e 38%, #f8faff 38%);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+
+    .wrap { max-width: 460px; margin: 0 auto; padding: 32px 20px 60px; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 6px 14px; border-radius: 99px;
+      font-size: .78rem; font-weight: 600; color: #fff;
+      margin-bottom: 18px;
+    }
+    .badge span { color: #86efac; }
+
+    h1 {
+      color: #fff;
+      font-size: 1.9rem; font-weight: 800; line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    h1 em { font-style: normal; color: #93c5fd; }
+
+    .sub {
+      color: rgba(255,255,255,.85);
+      font-size: 1rem; margin-bottom: 26px;
+    }
+
+    /* phone mockup */
+    .phone-frame {
+      width: 100%; max-width: 260px; margin: 0 auto 28px;
+      border-radius: 32px; background: #0a1a33;
+      border: 6px solid #1e3a5f; overflow: hidden;
+      box-shadow: 0 24px 56px rgba(0,0,0,.35);
+    }
+    .phone-notch { height: 22px; background: #0a1a33; display: flex; align-items: center; justify-content: center; }
+    .phone-notch-inner { width: 70px; height: 12px; background: #0d2040; border-radius: 99px; }
+    .phone-body { background: #f1f5f9; padding: 10px 12px 16px; }
+    .ph-hdr { background: var(--blue); margin: -10px -12px 8px; padding: 8px 12px; color: #fff; font-size: .62rem; font-weight: 700; }
+    .ph-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-bottom: 6px; }
+    .ph-label { font-size: .48rem; color: #64748b; margin-bottom: 3px; }
+    .ph-val { font-size: .5rem; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    .ph-score { font-size: 1.05rem; font-weight: 800; color: #dc2626; }
+    .ph-bar { height: 6px; background: #f1f5f9; border-radius: 3px; margin: 5px 0; overflow: hidden; }
+    .ph-bar i { display: block; height: 100%; background: linear-gradient(90deg,#f59e0b,#ef4444); }
+
+    .benefits { list-style: none; margin-bottom: 28px; }
+    .benefits li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: .95rem; color: var(--text);
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 12px; padding: 13px 14px; margin-bottom: 10px;
+    }
+    .benefits li .ic { font-size: 1.1rem; flex-shrink: 0; }
+    .benefits li strong { display: block; font-size: .95rem; }
+    .benefits li span { font-size: .82rem; color: var(--muted); }
+
+    .price-box {
+      background: #fff; border: 1.5px solid var(--blue);
+      border-radius: var(--radius); padding: 20px;
+      text-align: center; margin-bottom: 18px;
+      box-shadow: 0 8px 28px rgba(26,79,142,.12);
+    }
+    .price-tag { font-size: .82rem; color: var(--muted); margin-bottom: 4px; }
+    .price-big { font-size: 1.6rem; font-weight: 800; color: var(--blue); }
+    .price-note { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+    .cta {
+      display: block; width: 100%; text-align: center;
+      background: var(--green); color: #fff;
+      font-weight: 800; font-size: 1.08rem;
+      padding: 17px; border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(22,163,74,.35);
+      margin-bottom: 12px;
+    }
+    .cta:active { transform: translateY(1px); }
+
+    .trust {
+      text-align: center; font-size: .78rem; color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    .footer-note {
+      text-align: center; font-size: .78rem; color: #94a3b8;
+    }
+    .footer-note a { color: var(--blue); text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="badge">✅ <span>Para fisioterapeutas</span></div>
+  <h1>Chega de <em>ficha de papel</em>.<br>Avalie com escalas validadas no celular.</h1>
+  <p class="sub">Ficha completa, +30 escalas com pontuação automática, agenda e financeiro — tudo num só app.</p>
+
+  <div class="phone-frame">
+    <div class="phone-notch"><div class="phone-notch-inner"></div></div>
+    <div class="phone-body">
+      <div class="ph-hdr">📋 Ficha Fisio — Escalas Validadas</div>
+      <div class="ph-card">
+        <div class="ph-val">ODI — Índice de Oswestry</div>
+        <div class="ph-score">28<span style="font-size:.5rem;color:#64748b;font-weight:600"> /50 · 56%</span></div>
+        <div class="ph-bar"><i style="width:56%"></i></div>
+        <span style="background:#fef3c7;color:#92400e;font-size:.44rem;font-weight:700;padding:2px 7px;border-radius:99px">Incapacidade moderada</span>
+      </div>
+      <div class="ph-card">
+        <div class="ph-label">Dor em movimento</div>
+        <div class="ph-bar"><i style="width:70%;background:linear-gradient(90deg,#22c55e,#eab308,#ef4444)"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="benefits">
+    <li><span class="ic">📋</span><div><strong>Ficha completa baseada em evidência</strong><span>Anamnese, testes especiais, diagnóstico e evolução</span></div></li>
+    <li><span class="ic">📐</span><div><strong>+30 escalas validadas</strong><span>Pontuação automática e interpretação na hora</span></div></li>
+    <li><span class="ic">📅</span><div><strong>Agenda e financeiro juntos</strong><span>Sem planilha, sem caderninho</span></div></li>
+    <li><span class="ic">🔒</span><div><strong>Seus dados, no seu aparelho</strong><span>Offline, sem servidor externo, dentro da LGPD</span></div></li>
+  </ul>
+
+  <div class="price-box">
+    <div class="price-tag">5 dias grátis, sem cartão</div>
+    <div class="price-big">Depois R$ 9,90/mês</div>
+    <div class="price-note">ou R$ 89,90/ano · cancele quando quiser</div>
+  </div>
+
+  <a class="cta" href="/app/" onclick="gtag('event','click_cta_promo')">Começar meu teste grátis →</a>
+  <p class="trust">Sem compromisso. Sem cartão de crédito.</p>
+
+  <p class="footer-note">Já é assinante? <a href="/app/">Entrar no app</a></p>
+</div>
+
+</body>
+</html>
