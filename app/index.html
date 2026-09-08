@@ -2032,7 +2032,7 @@ function enviarPreAnamnese(){
     localStorage.setItem('fisio_whats',meuTel);
   }
   const chave = window.PreAnamneseCrypto ? window.PreAnamneseCrypto.getOrCreateKeyB64() : '';
-  const link='https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html?tel='+meuTel+(chave?'#k='+chave:'');
+  const link='https://fichafisio.com.br/app/pre-anamnese.html?tel='+meuTel+(chave?'#k='+chave:'');
   const msg='Olá! Por favor, preencha sua pré-avaliação fisioterapêutica antes da nossa consulta 🙂\n\n👉 '+link+'\n\nLeva só 3 minutos. Obrigado!';
   abrirModal(`<h3>📤 Pré-anamnese — enviar ao paciente</h3>
     <div class="legend">Copie a mensagem abaixo e cole no WhatsApp do paciente:</div>

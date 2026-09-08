@@ -2,6 +2,59 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-09-08 — link de pré-anamnese 404 pra todo paciente desde julho (crítico)
+
+Reportado como "pré-anamnese dando erro". Causa: `enviarPreAnamnese()` (`app/index.html`)
+gerava o link pro paciente apontando pra `https://dpplxx.github.io/Ficha-Fisio/pre-anamnese.html`
+— endereço de raiz do repositório, de antes da reestruturação `799963b` (07/07/2026) que moveu
+o app pra `/app/`. O link nunca foi atualizado depois da mudança de estrutura. Confirmado com
+`curl`: esse endereço redireciona (301) pra `https://fichafisio.com.br/pre-anamnese.html`, que
+devolve **404** (o arquivo real está em `/app/pre-anamnese.html`).
+
+Impacto: **todo link de pré-anamnese enviado a um paciente entre 07/07/2026 e hoje caía em
+página não encontrada** — o recurso ficou quebrado por 2 meses sem nenhum aviso, silenciosamente
+(o botão "Enviar" sempre funcionava, o link é que não abria nada pro paciente).
+
+Corrigido: link agora aponta direto pro domínio e caminho certos —
+`https://fichafisio.com.br/app/pre-anamnese.html`. Fisioterapeutas que já mandaram o link antigo
+pra algum paciente precisam gerar e reenviar um link novo (o antigo continua quebrado, não tem
+como consertar retroativamente uma mensagem já enviada no WhatsApp do paciente).
+
+## 2026-08-18 — "Esqueci a senha" quebrado: chave do Resend apontando pra conta errada
+
+**Não é mudança de código — é configuração no painel do Supabase/Resend, registrada aqui porque quebrava um fluxo real de cliente.**
+
+Uma fisioterapeuta reportou que uma paciente criou conta mas não conseguia usar "Esqueci a
+senha" — a function `send-reset` (não versionada neste repositório, só existe no painel do
+Supabase) devolvia erro genérico. Diagnóstico direto via `curl` no endpoint (sem precisar de
+acesso ao painel):
+
+1. A function respondia certo pra e-mail inexistente (404 claro) — não era CORS nem function
+   fora do ar.
+2. Pra um e-mail real, devolvia 500 com mensagem genérica escondendo a causa. O log da function
+   (Edge Functions → send-reset → Logs) revelou a causa real, em duas camadas:
+   - Primeiro: `Resend error: 401 API key is invalid` — a secret `RESEND_API_KEY` do Supabase
+     apontava pra uma chave revogada/trocada.
+   - Depois de trocar a chave: `Resend error: 403 domain is not verified` — a chave nova
+     pertencia à conta Resend `fichafisio09`, que só tem o domínio `contigosaude.com.br`
+     verificado (plano grátis, limite de 1 domínio). O `fichafisio.com.br` nunca tinha sido
+     verificado *nessa* conta.
+
+Causa raiz: existe uma segunda conta Resend (`rangelk17`), mais antiga, com o
+`fichafisio.com.br` verificado desde a criação original do `send-reset` — e é dela que a chave
+configurada no Supabase deveria vir. Em algum momento a secret `RESEND_API_KEY` foi trocada pra
+uma chave da conta errada (`fichafisio09`), quebrando silenciosamente qualquer e-mail que
+dependesse do domínio próprio (redefinição de senha), sem quebrar o `notificar-signup` (que usa
+o domínio de teste do Resend, `onboarding@resend.dev`, e por isso mascarou o problema).
+
+Corrigido: criada uma chave de API nova na conta certa (`rangelk17`, domínio já verificado) e
+atualizada a secret `RESEND_API_KEY` no Supabase. Confirmado com `curl` direto no endpoint
+(`200 {"ok":true}`).
+
+**Pendente:** confirmar que `notificar-signup` continua funcionando com a chave nova (mesma
+secret é compartilhada entre as duas functions) — teoricamente sim, já que o domínio de teste
+funciona em qualquer conta Resend, mas não foi testado ao vivo depois da troca.
+
 ## 2026-08-11 (parte 11) — regressão em produção: cache do Service Worker preso numa versão antiga da lib
 
 Usuários reportaram `TypeError: DbCrypto.abrirComMigracao is not a function` ao entrar no app,
