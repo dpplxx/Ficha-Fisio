@@ -1152,7 +1152,11 @@ async function desbloquearDBComChave(chave,chaveAntiga){
 }
 
 function carregarDB(){
-  const bruto=localStorage.getItem(_dbStoreKey);
+  // localStorage pode estar bloqueado (modo privado restrito, política do navegador,
+  // ou até um robô/scanner que carrega o HTML numa URL data: pra verificar segurança —
+  // nesses casos o acesso lança SecurityError). Sem essa proteção, a inicialização
+  // inteira do app travava com um erro não tratado antes mesmo da tela aparecer.
+  let bruto=null; try{ bruto=localStorage.getItem(_dbStoreKey); }catch(e){}
   if(window.DbCrypto && DbCrypto.ehCifrado(bruto)){
     // dado real existe cifrado — não inventa paciente novo nem mexe em nada até
     // ter a chave (ver desbloquearDBComChave, chamado pelo fluxo de login/assinatura)
@@ -1187,8 +1191,9 @@ function carregarDBDoUsuario(uidConta){
   _dbUnlockKey=null; _dbCifradoBruto=null; _dbMigracaoLegadoPendente=false;
   DB={pacientes:[],atualId:null};
   const chaveUsuario=DB_KEY+'_'+uidConta;
-  if(localStorage.getItem(chaveUsuario)!=null){ _dbStoreKey=chaveUsuario; carregarDB(); return; }
-  const legado=localStorage.getItem(DB_KEY);
+  let temSlotConta=false; try{ temSlotConta=localStorage.getItem(chaveUsuario)!=null; }catch(e){}
+  if(temSlotConta){ _dbStoreKey=chaveUsuario; carregarDB(); return; }
+  let legado=null; try{ legado=localStorage.getItem(DB_KEY); }catch(e){}
   _dbStoreKey=chaveUsuario;
   if(legado==null){ carregarDB(); return; }
   if(window.DbCrypto && DbCrypto.ehCifrado(legado)){
@@ -1877,9 +1882,12 @@ function esconderBannerBackup(dias){
 }
 function checarBannerBackup(){
   if(!DB.pacientes||!DB.pacientes.length) return;
-  const snooze=Number(localStorage.getItem('ff_snoozeBackup')||0);
+  let snoozeRaw=0, lastRaw=0;
+  try{ snoozeRaw=localStorage.getItem('ff_snoozeBackup')||0; lastRaw=localStorage.getItem('ff_lastBackup')||0; }
+  catch(e){ return; } // armazenamento bloqueado — sem como saber a data do último backup, não mostra o lembrete
+  const snooze=Number(snoozeRaw);
   if(Date.now()<snooze) return;
-  const last=Number(localStorage.getItem('ff_lastBackup')||0);
+  const last=Number(lastRaw);
   const dias=last?Math.floor((Date.now()-last)/86400000):Infinity;
   if(dias<30) return;
   const b=document.getElementById('backupBanner'); if(!b) return;

@@ -2,6 +2,22 @@
 
 Registro das mudanças relevantes no Ficha Fisio a partir desta data. Formato livre, mais curto que um commit log — pra dar contexto rápido de "o que mudou e por quê" sem precisar ler o histórico do git inteiro.
 
+## 2026-09-08 (parte 2) — endurece init contra `localStorage` bloqueado
+
+Sentry reportou `SecurityError: Failed to read the 'localStorage' property from 'Window'`
+numa URL `data:text/html;...` — não é paciente/fisioterapeuta de verdade, é algum robô/scanner
+(comum em verificação automática de link de e-mail/WhatsApp) carregando o HTML numa origem
+isolada, onde `localStorage` lança erro só de ser acessado. Mas isso expôs um problema real:
+`carregarDB()` (chamada incondicionalmente na inicialização) lia `localStorage` sem `try/catch`
+— qualquer ambiente com armazenamento bloqueado (esse scanner, mas também modo privado
+restrito de verdade em alguns navegadores/políticas corporativas) travava a inicialização
+inteira do app com um erro não tratado, antes da tela nem aparecer.
+
+Corrigido: `localStorage.getItem` agora protegido por `try/catch` em `carregarDB()`,
+`carregarDBDoUsuario()` e `checarBannerBackup()` (os pontos que rodam sem interação do usuário,
+direto na inicialização). Falha de leitura agora cai no mesmo caminho já usado pra "primeira
+vez que abre o app" (fallback seguro, já teste do restante da lógica) em vez de travar.
+
 ## 2026-09-08 — link de pré-anamnese 404 pra todo paciente desde julho (crítico)
 
 Reportado como "pré-anamnese dando erro". Causa: `enviarPreAnamnese()` (`app/index.html`)
