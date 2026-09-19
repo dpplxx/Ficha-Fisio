@@ -35,6 +35,24 @@
   gtag('js', new Date());
   gtag('config', 'G-4Z35DNJE6S');
 </script>
+<!-- Meta Pixel Code — só evento de nome (PageView/CompleteRegistration), nunca e-mail/dado clínico,
+     seguindo a mesma política de privacidade do Sentry acima. -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1325261722777734');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1325261722777734&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f4c81">
@@ -2278,6 +2296,15 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
     return {ok:false, erro:'Não foi possível verificar sua assinatura (sem conexão). Verifique a internet e recarregue a página.'};
   }
   if(!window.AUTH_ATIVO){ telas('app'); return; }   // login desligado → abre normal
+  // Quem vem do CTA "começar teste grátis" (promo.html) cai direto em modo
+  // "Criar conta" — sem isso, a tela padrão é "Entrar", que parece exigir
+  // conta existente e afasta quem tá clicando pela primeira vez.
+  if(new URLSearchParams(location.search).get('teste')==='1'){
+    modo='signup';
+    $('authBtn').textContent='Criar conta';
+    $('authToggle').textContent='Já tenho conta';
+    $('authSub').textContent='5 dias grátis, sem cartão. Crie sua conta para começar.';
+  }
   telas('login');                                   // garante que nunca fica em branco
   { const pp=$('payPreco'); if(pp&&window.PAY_PRECO) pp.textContent=window.PAY_PRECO; }
   if(!window.supabase){ msg('Não foi possível carregar o login. Verifique a internet e recarregue a página.'); return; }
@@ -2404,7 +2431,10 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
           if(em&&(em.toLowerCase().includes('already')||em.toLowerCase().includes('registered')||em.toLowerCase().includes('cadastrado'))){
             msg('Este e-mail já tem uma conta. Use "Esqueci a senha" para definir sua senha e entrar.',false);
           } else { msg(em&&em!=='{}'?em:'Erro ao criar conta. Tente novamente.'); }
-        } else if(!data.session) msg('Conta criada! Se você acabou de comprar, clique em "Esqueci a senha" para configurar sua senha e entrar.',true);
+        } else {
+          if(window.fbq) fbq('track','CompleteRegistration'); // só o nome do evento, sem e-mail/PII
+          if(!data.session) msg('Conta criada! Enviamos um e-mail de confirmação — clique no link para liberar seu acesso e começar o teste grátis.',true);
+        }
       }
     }catch(e){ const em=e&&typeof e.message==='string'&&e.message?e.message:'Erro de conexão. Verifique sua internet e tente novamente.'; msg(em); }
     btn.disabled=false; btn.textContent=txt;

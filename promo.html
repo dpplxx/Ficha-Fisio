@@ -16,6 +16,23 @@
     gtag('config', 'G-4Z35DNJE6S');
     gtag('event', 'view_promo_page', { page_path: '/promo.html' });
   </script>
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1325261722777734');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1325261722777734&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -161,7 +178,7 @@
     <div class="price-note">ou R$ 89,90/ano · cancele quando quiser</div>
   </div>
 
-  <a class="cta" href="/app/" onclick="gtag('event','click_cta_promo')">Começar meu teste grátis →</a>
+  <a class="cta" href="/app/?teste=1" onclick="gtag('event','click_cta_promo')">Começar meu teste grátis →</a>
   <p class="trust">Sem compromisso. Sem cartão de crédito.</p>
 
   <p class="footer-note">Já é assinante? <a href="/app/">Entrar no app</a></p>
