@@ -1081,6 +1081,21 @@ let _dbUsuarioAtual=null;
 // isolamento) e ainda não foi comprovado como pertencente a esta conta — só é
 // consumido/apagado do slot legado depois que a migração termina com sucesso.
 let _dbMigracaoLegadoPendente=false;
+// Guarda em memória (não localStorage) pra não disparar signup_start de novo se o
+// usuário reenviar o formulário (retry após erro, duplo clique) na mesma carga de
+// página — um novo carregamento de página é uma nova tentativa legítima.
+let _signupStartFired=false;
+
+// Ponto único de disparo de evento CUSTOM de analytics (GA4 + Meta Pixel via
+// trackCustom), usado por signup_start e product_activation — eventos que não têm
+// equivalente PADRÃO no Meta Pixel (diferente de CompleteRegistration, que é padrão
+// e continua disparado à parte, via fbq('track', ...), mais abaixo). Nunca manda
+// parâmetro nenhum (nome/e-mail/dado clínico), só o nome do evento, seguindo a mesma
+// política de privacidade do Pixel/Sentry já configurados neste arquivo.
+function dispararAnalytics(nome){
+  try{ if(window.gtag) gtag('event', nome); }catch(e){}
+  try{ if(window.fbq) fbq('trackCustom', nome); }catch(e){}
+}
 
 function novaFicha(){return {regioesAtivas:[], escalasAtivas:[], escalaVals:{}, sessoes:[], mapaDor:[], imagens:[], campos:{}};}
 function hojeISO(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
@@ -1258,7 +1273,23 @@ function salvar(silent){
   if(p){p.dados=dados; const nm=dados.campos.id_nome&&dados.campos.id_nome.trim(); p.nome=nm||p.nome||'Sem nome'; p.atualizadoEm=hojeISO();}
   persistDB();
   atualizarSeletorPacientes();
-  if(!silent) flash('Salvo ✓');
+  if(!silent){
+    flash('Salvo ✓');
+    // product_activation: só no clique explícito em "Salvar" (silent=false — trocar de
+    // paciente e outras rotinas internas chamam salvar(true) e não contam), só quando a
+    // ficha já tem nome de paciente de verdade (não o placeholder "Novo paciente"/"Sem
+    // nome"), e só uma vez por conta (flag em localStorage por uid, mesmo padrão já
+    // usado por fisio_chaveDB_/fisio_assin_ neste arquivo).
+    if(p && p.nome && p.nome!=='Sem nome' && p.nome!=='Novo paciente' && _dbUsuarioAtual){
+      try{
+        const chaveAtiv='fisio_activated_'+_dbUsuarioAtual;
+        if(!localStorage.getItem(chaveAtiv)){
+          localStorage.setItem(chaveAtiv,'1');
+          dispararAnalytics('product_activation');
+        }
+      }catch(e){}
+    }
+  }
 }
 function flash(msg){
   let f=document.createElement('div');
@@ -2425,6 +2456,10 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
           msg(em);
         }
       }else{
+        // signup_start: intenção real de criar conta — primeiro envio do formulário de
+        // cadastro já validado (passou do "preencha e-mail e senha" acima), não a
+        // simples abertura da tela. Só uma vez por carga de página (ver _signupStartFired).
+        if(!_signupStartFired){ _signupStartFired=true; dispararAnalytics('signup_start'); }
         const {data,error}=await comTimeout(sb.auth.signUp({email,password:pass}));
         if(error){
           const em=typeof error.message==='string'?error.message:'';
@@ -2432,7 +2467,8 @@ if(_dataAv&&!_dataAv.value){_dataAv.value=hojeISO(); salvar(true);}
             msg('Este e-mail já tem uma conta. Use "Esqueci a senha" para definir sua senha e entrar.',false);
           } else { msg(em&&em!=='{}'?em:'Erro ao criar conta. Tente novamente.'); }
         } else {
-          if(window.fbq) fbq('track','CompleteRegistration'); // só o nome do evento, sem e-mail/PII
+          if(window.fbq) fbq('track','CompleteRegistration'); // evento padrão do Meta — só o nome, sem e-mail/PII
+          if(window.gtag) gtag('event','signup_complete'); // equivalente no GA4, mesmo critério (só dispara em sucesso real)
           if(!data.session) msg('Conta criada! Enviamos um e-mail de confirmação — clique no link para liberar seu acesso e começar o teste grátis.',true);
         }
       }
